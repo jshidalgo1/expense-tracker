@@ -118,7 +118,7 @@ if uncategorized:
         with col1:
             new_cat_name = st.text_input("Category Name", placeholder="e.g., Subscriptions, Rent, Gym", key="new_category_input")
         with col2:
-            if st.button("➕ Add Category", use_container_width=True):
+            if st.button("➕ Add Category", width="stretch"):
                 if new_cat_name and new_cat_name.strip():
                     from utils.categorizer import get_or_create_category
                     get_or_create_category(new_cat_name.strip())
@@ -148,7 +148,7 @@ if uncategorized:
                     )
                 
                 with col2:
-                    if st.button("💾 Rename", key=f"btn_rename_{cat}", use_container_width=True):
+                    if st.button("💾 Rename", key=f"btn_rename_{cat}", width="stretch"):
                         if new_cat_name and new_cat_name.strip() and new_cat_name != cat:
                             success = update_category(cat, new_cat_name.strip())
                             if success:
@@ -194,7 +194,7 @@ if uncategorized:
                     key=f"map_{trans['id']}"
                 )
                 
-                if st.button("✅ Map", key=f"btn_map_{trans['id']}", use_container_width=True):
+                if st.button("✅ Map", key=f"btn_map_{trans['id']}", width="stretch"):
                     # Update the transaction in the database
                     update_transaction_category(trans['id'], new_category)
                     st.success(f"✅ Mapped to {new_category}")
@@ -229,7 +229,7 @@ if uncategorized:
         
         with col3:
             st.write("")  # Spacing
-            if st.button("➕ Add Rule", use_container_width=True):
+            if st.button("➕ Add Rule", width="stretch"):
                 if merchant_pattern and merchant_pattern.strip():
                     add_merchant_mapping(merchant_pattern.strip(), merchant_category)
                     st.success(f"✅ Rule added: {merchant_pattern} → {merchant_category}")
@@ -257,7 +257,7 @@ if uncategorized:
                     st.caption(f"Last used: {mapping['last_used'][:10] if mapping['last_used'] else 'Never'}")
                 
                 with col4:
-                    if st.button("🗑️", key=f"del_merchant_{mapping['id']}", use_container_width=True):
+                    if st.button("🗑️", key=f"del_merchant_{mapping['id']}", width="stretch"):
                         delete_merchant_mapping(mapping['merchant_pattern'])
                         st.success("✅ Rule deleted")
                         st.rerun()
@@ -324,7 +324,7 @@ with col1:
         height=400
     )
     
-    st.plotly_chart(fig_category, use_container_width=True)
+    st.plotly_chart(fig_category, width="stretch")
 
 with col2:
     st.subheader("💳 Spending by Account")
@@ -351,7 +351,7 @@ with col2:
         yaxis_title="Amount (₱)"
     )
     
-    st.plotly_chart(fig_account, use_container_width=True)
+    st.plotly_chart(fig_account, width="stretch")
 
 # Monthly trend
 st.subheader("📅 Monthly Spending Trend")
@@ -381,7 +381,7 @@ fig_trend.update_layout(
     hovermode='x unified'
 )
 
-st.plotly_chart(fig_trend, use_container_width=True)
+st.plotly_chart(fig_trend, width="stretch")
 
 # Top expenses
 st.divider()
@@ -396,7 +396,7 @@ with col1:
     top_expenses['amount'] = top_expenses['amount'].apply(lambda x: f"₱{x:,.2f}")
     top_expenses.columns = ['Date', 'Description', 'Category', 'Amount']
     
-    st.dataframe(top_expenses, use_container_width=True, hide_index=True)
+    st.dataframe(top_expenses, width="stretch", hide_index=True)
 
 with col2:
     st.subheader("📊 Category Breakdown")
@@ -410,7 +410,7 @@ with col2:
     category_breakdown['Total'] = category_breakdown['Total'].apply(lambda x: f"₱{x:,.2f}")
     category_breakdown['Average'] = category_breakdown['Average'].apply(lambda x: f"₱{x:,.2f}")
     
-    st.dataframe(category_breakdown, use_container_width=True)
+    st.dataframe(category_breakdown, width="stretch")
 
 # Recent transactions
 st.divider()
@@ -501,7 +501,7 @@ if search_merchant and search_merchant.strip():
         col_action1, col_action2, col_action3 = st.columns(3)
         
         with col_action1:
-            if st.button(f"📦 Update Selected ({len(selected_bulk)})", use_container_width=True, key="bulk_update_selected"):
+            if st.button(f"📦 Update Selected ({len(selected_bulk)})", width="stretch", key="bulk_update_selected"):
                 if len(selected_bulk) == 0:
                     st.warning("Please select at least one transaction")
                 else:
@@ -520,7 +520,7 @@ if search_merchant and search_merchant.strip():
                     st.rerun()
         
         with col_action2:
-            if st.button(f"⚡ Update All {len(similar_trans)}", use_container_width=True, key="bulk_update_all"):
+            if st.button(f"⚡ Update All {len(similar_trans)}", width="stretch", key="bulk_update_all"):
                 update_count = 0
                 for trans in similar_trans:
                     if update_transaction_category(trans['id'], new_bulk_category):
@@ -536,7 +536,7 @@ if search_merchant and search_merchant.strip():
                 st.rerun()
         
         with col_action3:
-            if st.button("❌ Clear", use_container_width=True, key="bulk_clear"):
+            if st.button("❌ Clear", width="stretch", key="bulk_clear"):
                 for trans in similar_trans:
                     st.session_state.pop(f"bulk_trans_{trans['id']}", None)
                 st.rerun()
@@ -670,7 +670,7 @@ else:
     pag_col1, pag_col2, pag_col3, pag_col4, pag_col5 = st.columns([1, 1, 1, 1, 1])
     
     with pag_col1:
-        if st.button("⬅️ Previous", use_container_width=True, disabled=(st.session_state.trans_page == 0)):
+        if st.button("⬅️ Previous", width="stretch", disabled=(st.session_state.trans_page == 0)):
             st.session_state.trans_page -= 1
             st.rerun()
     
@@ -695,7 +695,7 @@ else:
         st.write("")  # Spacing
     
     with pag_col5:
-        if st.button("Next ➡️", use_container_width=True, disabled=(st.session_state.trans_page >= total_pages - 1)):
+        if st.button("Next ➡️", width="stretch", disabled=(st.session_state.trans_page >= total_pages - 1)):
             st.session_state.trans_page += 1
             st.rerun()
 
@@ -716,5 +716,5 @@ with col2:
         data=csv,
         file_name=f"expenses_{datetime.now().strftime('%Y%m%d')}.csv",
         mime="text/csv",
-        use_container_width=True
+        width="stretch"
     )

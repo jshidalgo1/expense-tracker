@@ -56,7 +56,7 @@ with st.form("add_category_form"):
     with col2:
         st.write("")  # Spacing
         st.write("")  # Spacing
-        add_submitted = st.form_submit_button("➕ Add Category", use_container_width=True, type="primary")
+        add_submitted = st.form_submit_button("➕ Add Category", width="stretch", type="primary")
     
     if add_submitted:
         if not new_category_name:
@@ -146,7 +146,7 @@ if categories and all_transactions:
     category_stats['Total Spent'] = category_stats['Total Spent'].apply(lambda x: f"₱{x:,.2f}")
     category_stats['Average Amount'] = category_stats['Average Amount'].apply(lambda x: f"₱{x:,.2f}")
     
-    st.dataframe(category_stats, use_container_width=True)
+    st.dataframe(category_stats, width="stretch")
 else:
     st.info("No transaction data available yet.")
 

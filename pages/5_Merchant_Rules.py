@@ -89,13 +89,13 @@ if suggestions:
         for merchant, category, frequency, confidence in suggestions
     ])
     
-    st.dataframe(df_suggestions, use_container_width=True, hide_index=True)
+    st.dataframe(df_suggestions, width="stretch", hide_index=True)
     
     # Apply suggestions
     col1, col2, col3 = st.columns([2, 1, 1])
     
     with col2:
-        if st.button("✅ Apply All Suggestions", use_container_width=True, type="primary"):
+        if st.button("✅ Apply All Suggestions", width="stretch", type="primary"):
             apply_result = auto_apply_merchant_mappings(min_frequency=2, confidence_threshold=0.75)
             
             if apply_result['added'] > 0:
@@ -107,7 +107,7 @@ if suggestions:
                 st.warning("No new rules were added")
     
     with col3:
-        if st.button("🔄 Refresh", use_container_width=True):
+        if st.button("🔄 Refresh", width="stretch"):
             st.rerun()
     
     st.divider()
@@ -131,7 +131,7 @@ if suggestions:
     
     with col3:
         st.write("")  # Spacing
-        if st.button("Add This Rule", use_container_width=True, type="primary"):
+        if st.button("Add This Rule", width="stretch", type="primary"):
             suggested_cat = next((s[1] for s in suggestions if s[0] == selected_suggestion), "")
             if add_merchant_mapping(selected_suggestion, suggested_cat):
                 st.success(f"✅ Rule added: {selected_suggestion} → {suggested_cat}")
@@ -163,7 +163,7 @@ with st.form("add_rule_form"):
             get_categories() or ["Food & Dining", "Transportation", "Shopping"]
         )
     
-    submitted = st.form_submit_button("➕ Add Rule", use_container_width=True, type="primary")
+    submitted = st.form_submit_button("➕ Add Rule", width="stretch", type="primary")
     
     if submitted:
         if not merchant_pattern or not category:
@@ -205,7 +205,7 @@ if mappings:
         for m in mappings
     ])
     
-    st.dataframe(df_mappings, use_container_width=True, hide_index=True)
+    st.dataframe(df_mappings, width="stretch", hide_index=True)
     
     # Delete a rule
     st.subheader("🗑️ Delete Merchant Rule")
@@ -221,7 +221,7 @@ if mappings:
     
     with col2:
         st.write("")  # Spacing
-        if st.button("🗑️ Delete Rule", use_container_width=True, type="secondary"):
+        if st.button("🗑️ Delete Rule", width="stretch", type="secondary"):
             if delete_merchant_mapping(merchant_to_delete):
                 st.success(f"✅ Rule deleted: {merchant_to_delete}")
                 st.rerun()
@@ -268,5 +268,5 @@ with col1:
     st.info("💡 **Tip**: Review suggested rules regularly to keep your categorization accurate and up-to-date.")
 
 with col2:
-    if st.button("🔍 Refresh Suggestions", use_container_width=True):
+    if st.button("🔍 Refresh Suggestions", width="stretch"):
         st.rerun()

@@ -122,10 +122,10 @@ with tab_upload:
     col_submit, col_save = st.columns([1, 1])
     
     with col_submit:
-        submitted = st.button("🔄 Process Statements", use_container_width=True, type="primary")
+        submitted = st.button("🔄 Process Statements", width="stretch", type="primary")
         
     with col_save:
-        saved_config = st.button("💾 Save Bank Config Only", use_container_width=True)
+        saved_config = st.button("💾 Save Bank Config Only", width="stretch")
 
     if saved_config or submitted:
         # Determine final bank name
@@ -335,7 +335,7 @@ with tab_upload:
         col_confirm, col_cancel = st.columns(2)
         
         with col_confirm:
-            if st.button("✅ Confirm & Save to Database", type="primary", use_container_width=True):
+            if st.button("✅ Confirm & Save to Database", type="primary", width="stretch"):
                 if len(st.session_state.preview_data) == 0:
                     st.error("❌ No transactions to save. Please upload files again.")
                 else:
@@ -412,7 +412,7 @@ with tab_manage:
                     st.text(f"Password: {masked}")
                 
                 with col3:
-                    if st.button("🗑️ Delete", key=f"delete_{bank['bank_name']}", type="secondary", use_container_width=True):
+                    if st.button("🗑️ Delete", key=f"delete_{bank['bank_name']}", type="secondary", width="stretch"):
                         delete_bank_password(bank['bank_name'])
                         st.rerun()
                 st.divider()

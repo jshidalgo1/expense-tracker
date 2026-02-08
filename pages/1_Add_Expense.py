@@ -110,7 +110,7 @@ with st.form("expense_form", clear_on_submit=True):
             )
     
     # Submit button
-    submitted = st.form_submit_button("💾 Add Expense", use_container_width=True, type="primary")
+    submitted = st.form_submit_button("💾 Add Expense", width="stretch", type="primary")
     
     if submitted:
         # Validation
@@ -163,6 +163,6 @@ if recent_transactions:
     display_df['amount'] = display_df['amount'].apply(lambda x: f"₱{x:,.2f}")
     display_df.columns = ['Date', 'Description', 'Category', 'Amount', 'Account']
     
-    st.dataframe(display_df, use_container_width=True, hide_index=True)
+    st.dataframe(display_df, width="stretch", hide_index=True)
 else:
     st.info("No transactions yet. Add your first expense above!")
