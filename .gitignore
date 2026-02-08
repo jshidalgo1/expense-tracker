@@ -1,5 +1,6 @@
 *.db
-uploads/
+data/
+data/uploads/
 .streamlit/secrets.toml
 __pycache__/
 *.pyc

@@ -3,7 +3,10 @@ from datetime import datetime
 from typing import List, Dict, Optional, Tuple
 import os
 
-DB_PATH = "expenses.db"
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+DB_PATH = os.path.join(DATA_DIR, "expenses.db")
 
 def get_connection():
     """Create a database connection."""

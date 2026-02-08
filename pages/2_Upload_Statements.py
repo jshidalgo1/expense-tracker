@@ -47,7 +47,9 @@ st.title("📄 Upload Bank Statements")
 st.markdown("Upload PDF bank statements to automatically extract transactions.")
 
 # Create uploads directory if it doesn't exist
-os.makedirs("uploads", exist_ok=True)
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+UPLOADS_DIR = os.path.join(BASE_DIR, "data", "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 # Get saved banks
 saved_banks = get_bank_passwords()
@@ -160,7 +162,7 @@ with tab_upload:
             
             for uploaded_file in uploaded_files:
                 # Save uploaded file
-                file_path = os.path.join("uploads", uploaded_file.name)
+                file_path = os.path.join(UPLOADS_DIR, uploaded_file.name)
                 with open(file_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
                 
@@ -448,6 +450,6 @@ st.markdown("""
 ### 🔒 Privacy & Security
 
 - Passwords are stored locally in your database
-- PDF files are saved to the `uploads/` folder
+- PDF files are saved to the `data/uploads/` folder
 - No data is sent to external servers
 """)

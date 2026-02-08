@@ -5,6 +5,7 @@ from utils.pdf_parser import extract_transactions
 
 def test_unionbank_password_protected_statement_filters_non_transactions():
     pdf_path = os.path.join(
+        "data",
         "uploads",
         "UB_VP201-REWARDS VISA PLATINUM_eStatement_02022026_201060006548177.pdf",
     )

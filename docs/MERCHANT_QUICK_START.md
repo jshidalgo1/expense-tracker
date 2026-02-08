@@ -140,7 +140,7 @@ Now matches:
 
 ## Data Privacy
 
-All data stays local in `expenses.db` - no cloud uploads or external APIs used.
+All data stays local in `data/expenses.db` - no cloud uploads or external APIs used.
 
 ---
 

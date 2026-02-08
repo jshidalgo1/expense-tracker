@@ -33,7 +33,7 @@
 - Features list
 
 ### For Change History
-👉 **[CHANGELOG.md](./CHANGELOG.md)** - *What's new*
+👉 **[CHANGELOG.md](../CHANGELOG.md)** - *What's new*
 - All changes in v1.0.0
 - Files created/modified
 - Features added

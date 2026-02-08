@@ -33,10 +33,10 @@
   - `get_merchant_mapping_stats()` - Get statistics about merchant mappings
 
 #### Documentation
-- **`MERCHANT_QUICK_START.md`** - Quick reference guide for users
-- **`MERCHANT_AUTOMATION.md`** - Comprehensive implementation guide
-- **`IMPLEMENTATION_SUMMARY.md`** - Technical overview and API reference
-- **`VISUAL_SUMMARY.txt`** - Visual representation of implementation
+- **`docs/MERCHANT_QUICK_START.md`** - Quick reference guide for users
+- **`docs/MERCHANT_AUTOMATION.md`** - Comprehensive implementation guide
+- **`docs/IMPLEMENTATION_SUMMARY.md`** - Technical overview and API reference
+- **`docs/VISUAL_SUMMARY.txt`** - Visual representation of implementation
 - **`CHANGELOG.md`** - This file
 
 ### Features
@@ -160,10 +160,10 @@ print(f"Added {result['added']} new rules")
 |------|---------|-------|
 | `utils/merchant_learner.py` | Core learning engine | ~150 |
 | `pages/5_Merchant_Rules.py` | Management UI | ~350 |
-| `MERCHANT_QUICK_START.md` | Quick reference | ~150 |
-| `MERCHANT_AUTOMATION.md` | Full guide | ~180 |
-| `IMPLEMENTATION_SUMMARY.md` | Technical overview | ~300 |
-| `VISUAL_SUMMARY.txt` | Visual representation | ~250 |
+| `docs/MERCHANT_QUICK_START.md` | Quick reference | ~150 |
+| `docs/MERCHANT_AUTOMATION.md` | Full guide | ~180 |
+| `docs/IMPLEMENTATION_SUMMARY.md` | Technical overview | ~300 |
+| `docs/VISUAL_SUMMARY.txt` | Visual representation | ~250 |
 | `CHANGELOG.md` | This file | - |
 
 ### Testing
@@ -218,10 +218,10 @@ Potential improvements for future versions:
 
 ### Support & Documentation
 
-- **Quick Start**: See `MERCHANT_QUICK_START.md`
-- **Full Guide**: See `MERCHANT_AUTOMATION.md`
-- **Technical**: See `IMPLEMENTATION_SUMMARY.md`
-- **Visual**: See `VISUAL_SUMMARY.txt`
+- **Quick Start**: See `docs/MERCHANT_QUICK_START.md`
+- **Full Guide**: See `docs/MERCHANT_AUTOMATION.md`
+- **Technical**: See `docs/IMPLEMENTATION_SUMMARY.md`
+- **Visual**: See `docs/VISUAL_SUMMARY.txt`
 - **Code Docs**: See docstrings in `utils/merchant_learner.py`
 
 ### Credits

@@ -174,8 +174,8 @@ To update credentials:
 - ✅ No telemetry or data collection
 
 **Files excluded from version control** (via `.gitignore`):
-- `expenses.db` - Your complete transaction database
-- `uploads/` - Uploaded and processed PDF files
+- `data/expenses.db` - Your complete transaction database
+- `data/uploads/` - Uploaded and processed PDF files
 - `.streamlit/` - Local configuration files
 - Virtual environment files
 
@@ -217,6 +217,12 @@ expense-tracker/
 ├── app.py                      # Main application with authentication & home page
 ├── config.yaml                 # User credentials and session configuration
 ├── requirements.txt            # Python dependencies (streamlit, pikepdf, etc.)
+├── docs/
+│   ├── _INDEX.md               # Documentation index and quick links
+│   ├── MERCHANT_QUICK_START.md # Quick reference guide
+│   ├── MERCHANT_AUTOMATION.md  # Full implementation guide
+│   ├── IMPLEMENTATION_SUMMARY.md # Technical overview and API reference
+│   └── VISUAL_SUMMARY.txt      # Visual representation of implementation
 ├── pages/
 │   ├── 1_Add_Expense.py       # Manual expense entry with category suggestions
 │   ├── 2_Upload_Statements.py # PDF upload and bank statement processing
@@ -226,10 +232,11 @@ expense-tracker/
 │   ├── database.py            # SQLite operations & schema management
 │   ├── pdf_parser.py          # PDF text extraction & password handling
 │   └── categorizer.py         # Smart categorization with fuzzy matching
-├── uploads/                    # Uploaded PDF file storage (local only)
+├── data/
+│   ├── uploads/                # Uploaded PDF file storage (local only)
+│   └── expenses.db             # SQLite database (created on first run, .gitignored)
 ├── .gitignore                 # Excluded files from version control
-├── README.md                  # This documentation
-└── expenses.db                # SQLite database (created on first run, .gitignored)
+└── README.md                  # This documentation
 ```
 
 ## 🛠️ Technical Stack
@@ -299,16 +306,16 @@ expense-tracker/
 
 **Problem**: Transactions not saving or "database is locked" error
 - **Solution**: 
-  - Check file permissions for `expenses.db`
+   - Check file permissions for `data/expenses.db`
   - Ensure the app has write access to the directory
   - Close other instances of the app using the database
   - Try restarting the Streamlit server
 
 **Problem**: "Database corrupted" or unable to open database
 - **Solution**: 
-  - Backup your current `expenses.db`
-  - A backup file (`expenses.db.bak_*`) is created automatically
-  - Delete corrupted `expenses.db` to start fresh
+   - Backup your current `data/expenses.db`
+   - A backup file (`data/expenses.db.bak_*`) is created automatically
+   - Delete corrupted `data/expenses.db` to start fresh
   - Restore from backup if needed
 
 ### Display Issues
@@ -358,15 +365,15 @@ git push -u origin main
 4. **Important Security Notes**
    - Change default credentials before deploying
    - Use strong, unique passwords
-   - Do not commit `expenses.db` to GitHub
+   - Do not commit `data/expenses.db` to GitHub
    - Store `config.yaml` in Streamlit Secrets, not in repository
 
 ## 📊 Data Management
 
 ### Backup Strategy
 
-- **Automatic Backups**: The app automatically creates dated backups (`expenses.db.bak_*`)
-- **Manual Backups**: Copy `expenses.db` to a safe location regularly
+- **Automatic Backups**: The app automatically creates dated backups (`data/expenses.db.bak_*`)
+- **Manual Backups**: Copy `data/expenses.db` to a safe location regularly
 - **Export Data**: Use Dashboard → Export Data to save transactions as CSV for external backup
 
 ### Database Maintenance
