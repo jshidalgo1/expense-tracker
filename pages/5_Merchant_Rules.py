@@ -78,66 +78,88 @@ suggestions = suggest_merchant_mappings(min_frequency=2, confidence_threshold=0.
 if suggestions:
     st.info(f"Found {len(suggestions)} merchant(s) ready to be auto-categorized based on your transaction history")
     
-    # Create dataframe for display
-    df_suggestions = pd.DataFrame([
-        {
-            "Merchant": merchant,
-            "Suggested Category": category,
-            "Frequency": frequency,
-            "Confidence": f"{confidence*100:.1f}%"
+    # Initialize session state for editable categories
+    if "edited_suggestions" not in st.session_state:
+        st.session_state.edited_suggestions = {
+            merchant: category for merchant, category, _, _ in suggestions
         }
-        for merchant, category, frequency, confidence in suggestions
-    ])
     
-    st.dataframe(df_suggestions, width="stretch", hide_index=True)
+    # Get all available categories for editing
+    all_categories = get_categories()
+    category_list = [cat['name'] for cat in all_categories]
     
-    # Apply suggestions
+    # Display editable suggestions using columns
+    st.markdown("**Edit categories before applying:**")
+    
+    col1, col2, col3, col4 = st.columns([2, 2, 1, 1])
+    with col1:
+        st.write("**Merchant**")
+    with col2:
+        st.write("**Category** (editable)")
+    with col3:
+        st.write("**Frequency**")
+    with col4:
+        st.write("**Confidence**")
+    
+    st.divider()
+    
+    # Create editable rows for each suggestion
+    for merchant, category, frequency, confidence in suggestions:
+        col1, col2, col3, col4 = st.columns([2, 2, 1, 1])
+        
+        with col1:
+            st.write(merchant)
+        
+        with col2:
+            # Editable category dropdown
+            edited_cat = st.selectbox(
+                f"Category for {merchant}",
+                category_list,
+                index=category_list.index(st.session_state.edited_suggestions[merchant]) if st.session_state.edited_suggestions[merchant] in category_list else 0,
+                key=f"cat_{merchant}",
+                label_visibility="collapsed"
+            )
+            st.session_state.edited_suggestions[merchant] = edited_cat
+        
+        with col3:
+            st.write(str(frequency))
+        
+        with col4:
+            st.write(f"{confidence*100:.1f}%")
+    
+    st.divider()
+    
+    # Apply suggestions with edited categories
     col1, col2, col3 = st.columns([2, 1, 1])
     
     with col2:
         if st.button("✅ Apply All Suggestions", width="stretch", type="primary"):
-            apply_result = auto_apply_merchant_mappings(min_frequency=2, confidence_threshold=0.75)
+            # Apply edited categories
+            added = 0
+            failed = 0
+            for merchant, edited_category in st.session_state.edited_suggestions.items():
+                try:
+                    if add_merchant_mapping(merchant, edited_category):
+                        added += 1
+                    else:
+                        failed += 1
+                except Exception as e:
+                    failed += 1
             
-            if apply_result['added'] > 0:
-                st.success(f"✅ Applied {apply_result['added']} new merchant rules!")
-                if apply_result['failed'] > 0:
-                    st.warning(f"⚠️ {apply_result['failed']} rules failed to apply")
+            if added > 0:
+                st.success(f"✅ Applied {added} new merchant rules!")
+                if failed > 0:
+                    st.warning(f"⚠️ {failed} rules failed to apply")
                 st.rerun()
             else:
                 st.warning("No new rules were added")
     
     with col3:
         if st.button("🔄 Refresh", width="stretch"):
+            st.session_state.edited_suggestions = {}
             st.rerun()
     
     st.divider()
-    
-    # Manual rule creation from suggestions
-    st.subheader("➕ Create Rule from Suggestion")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        selected_suggestion = st.selectbox(
-            "Select a suggestion",
-            [s[0] for s in suggestions],
-            key="selected_suggestion"
-        )
-    
-    with col2:
-        # Get the suggested category
-        suggested_cat = next((s[1] for s in suggestions if s[0] == selected_suggestion), "")
-        st.text_input("Category", value=suggested_cat, disabled=True)
-    
-    with col3:
-        st.write("")  # Spacing
-        if st.button("Add This Rule", width="stretch", type="primary"):
-            suggested_cat = next((s[1] for s in suggestions if s[0] == selected_suggestion), "")
-            if add_merchant_mapping(selected_suggestion, suggested_cat):
-                st.success(f"✅ Rule added: {selected_suggestion} → {suggested_cat}")
-                st.rerun()
-            else:
-                st.error("Failed to add rule")
 
 else:
     st.info("No new merchant patterns found yet. Keep adding transactions to build up suggestions!")
