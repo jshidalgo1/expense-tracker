@@ -1,5 +1,5 @@
 from rapidfuzz import fuzz, process
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 from utils.database import get_categories, add_category, get_merchant_mapping_for_description
 
 # Common keywords for automatic categorization
@@ -129,3 +129,42 @@ def get_or_create_category(category_name: str) -> str:
     # Create new category
     add_category(category_name)
     return category_name
+
+
+def batch_auto_categorize(descriptions: List[str], confidence_threshold: float = 60.0) -> Dict[str, Optional[str]]:
+    """
+    Auto-categorize multiple descriptions at once.
+    
+    Args:
+        descriptions: List of transaction descriptions
+        confidence_threshold: Minimum confidence to auto-assign
+        
+    Returns:
+        Dictionary mapping description -> suggested_category (or None)
+    """
+    results = {}
+    for desc in descriptions:
+        results[desc] = auto_categorize(desc, confidence_threshold)
+    return results
+
+
+def get_categorization_confidence_breakdown(description: str) -> Dict[str, float]:
+    """
+    Get confidence scores for all potential categories.
+    Useful for debugging categorization decisions.
+    
+    Args:
+        description: Transaction description
+        
+    Returns:
+        Dictionary of category -> confidence_score
+    """
+    description_lower = description.lower()
+    scores = {}
+    
+    # Score based on keyword matches
+    for category, keywords in CATEGORY_KEYWORDS.items():
+        matches = sum(1 for keyword in keywords if keyword in description_lower)
+        scores[category] = min(100, matches * 30)  # Each keyword adds 30 points
+    
+    return dict(sorted(scores.items(), key=lambda x: -x[1]))

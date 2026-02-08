@@ -493,3 +493,57 @@ def bulk_update_category(description_pattern: str, new_category: str,
     conn.close()
     
     return updated_count
+
+
+def update_merchant_mapping_usage(merchant_pattern: str) -> bool:
+    """Update the last_used timestamp for a merchant mapping."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        UPDATE merchant_mappings 
+        SET last_used = CURRENT_TIMESTAMP 
+        WHERE merchant_pattern = ?
+    """, (merchant_pattern.upper(),))
+    
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    
+    return updated
+
+
+def get_merchant_mapping_stats() -> Dict[str, any]:
+    """Get statistics about merchant mappings and their usage."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Total mappings
+    cursor.execute("SELECT COUNT(*) as count FROM merchant_mappings")
+    total_mappings = cursor.fetchone()['count']
+    
+    # Most recent mappings
+    cursor.execute("""
+        SELECT merchant_pattern, category, created_at, last_used
+        FROM merchant_mappings
+        ORDER BY last_used DESC
+        LIMIT 10
+    """)
+    recent = [dict(row) for row in cursor.fetchall()]
+    
+    # Mappings by category
+    cursor.execute("""
+        SELECT category, COUNT(*) as count
+        FROM merchant_mappings
+        GROUP BY category
+        ORDER BY count DESC
+    """)
+    by_category = {row['category']: row['count'] for row in cursor.fetchall()}
+    
+    conn.close()
+    
+    return {
+        'total_mappings': total_mappings,
+        'by_category': by_category,
+        'recent_mappings': recent
+    }
