@@ -7,13 +7,12 @@ from utils.database import (
     get_merchant_mappings, add_merchant_mapping,
     delete_merchant_mapping, get_merchant_mapping_stats,
     get_categories, get_transactions, update_transaction_category,
-    update_category
+    update_category, find_similar_transactions
 )
 from utils.merchant_learner import (
     suggest_merchant_mappings, auto_apply_merchant_mappings,
     get_learning_stats
 )
-from utils.pdf_parser import find_similar_transactions
 from utils.categorizer import get_or_create_category
 
 # Page configuration
