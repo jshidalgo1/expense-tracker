@@ -85,8 +85,7 @@ if suggestions:
         }
     
     # Get all available categories for editing
-    all_categories = get_categories()
-    category_list = [cat['name'] for cat in all_categories]
+    category_list = get_categories()
     
     # Display editable suggestions using columns
     st.markdown("**Edit categories before applying:**")
