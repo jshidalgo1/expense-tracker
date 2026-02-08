@@ -78,6 +78,10 @@ def init_db():
     conn.commit()
     conn.close()
 
+
+# Ensure schema exists on import (safe with IF NOT EXISTS)
+init_db()
+
 # ============= TRANSACTION OPERATIONS =============
 
 def add_transaction(date: str, description: str, category: str, 
