@@ -34,7 +34,7 @@ if not st.session_state.get('authentication_status'):
 # Main content
 st.title("📄 Upload Bank Statements")
 
-st.markdown("Upload PDF bank statements to automatically extract transactions.")
+st.markdown("Upload PDF bank statements to automatically extract transactions. PDFs are processed temporarily and not stored.")
 
 # Get saved banks
 saved_banks = get_bank_passwords()
@@ -443,6 +443,6 @@ st.markdown("""
 ### 🔒 Privacy & Security
 
 - Passwords are stored locally in your database
-- PDF files are saved to the `data/uploads/` folder
+- PDF files are processed temporarily and not stored
 - No data is sent to external servers
 """)
