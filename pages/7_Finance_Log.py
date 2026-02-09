@@ -33,53 +33,54 @@ st.subheader("🧾 Log Overall Finance")
 asset_template = pd.DataFrame([{"Bank": "", "Amount": 0.0}])
 debt_template = pd.DataFrame([{"Debt": "", "Amount": 0.0}])
 
-if "finance_assets_editor" not in st.session_state:
-    st.session_state.finance_assets_editor = asset_template
+assets_key = "finance_assets_editor"
+debts_key = "finance_debts_editor"
 
-if "finance_debts_editor" not in st.session_state:
-    st.session_state.finance_debts_editor = debt_template
+if assets_key not in st.session_state:
+    st.session_state[assets_key] = asset_template
+
+if debts_key not in st.session_state:
+    st.session_state[debts_key] = debt_template
 
 col_assets, col_debts = st.columns(2)
 
 with col_assets:
     st.markdown("**Bank Accounts**")
     if st.button("Add bank row"):
-        st.session_state.finance_assets_editor = pd.concat(
-            [st.session_state.finance_assets_editor, asset_template],
+        st.session_state[assets_key] = pd.concat(
+            [st.session_state[assets_key], asset_template],
             ignore_index=True
         )
     assets_df = st.data_editor(
-        st.session_state.finance_assets_editor,
+        st.session_state[assets_key],
         num_rows="dynamic",
-        use_container_width=True,
+        width="stretch",
         column_config={
             "Bank": st.column_config.TextColumn(required=False),
             "Amount": st.column_config.NumberColumn(min_value=0.0, step=0.01, format="%.2f")
         },
         hide_index=True,
-        key="finance_assets_editor"
+        key=assets_key
     )
-    st.session_state.finance_assets_editor = assets_df
 
 with col_debts:
     st.markdown("**Debts**")
     if st.button("Add debt row"):
-        st.session_state.finance_debts_editor = pd.concat(
-            [st.session_state.finance_debts_editor, debt_template],
+        st.session_state[debts_key] = pd.concat(
+            [st.session_state[debts_key], debt_template],
             ignore_index=True
         )
     debts_df = st.data_editor(
-        st.session_state.finance_debts_editor,
+        st.session_state[debts_key],
         num_rows="dynamic",
-        use_container_width=True,
+        width="stretch",
         column_config={
             "Debt": st.column_config.TextColumn(required=False),
             "Amount": st.column_config.NumberColumn(min_value=0.0, step=0.01, format="%.2f")
         },
         hide_index=True,
-        key="finance_debts_editor"
+        key=debts_key
     )
-    st.session_state.finance_debts_editor = debts_df
 
 assets_total = pd.to_numeric(assets_df.get("Amount", 0.0), errors="coerce").fillna(0).sum()
 debts_total = pd.to_numeric(debts_df.get("Amount", 0.0), errors="coerce").fillna(0).sum()
