@@ -76,6 +76,15 @@ with col_debts:
 
 st.caption("Edit rows below, then click Save Rows.")
 
+def build_items(df: pd.DataFrame, name_col: str) -> list[tuple[str, float]]:
+    if df.empty or name_col not in df.columns:
+        return []
+    cleaned = df.copy()
+    cleaned[name_col] = cleaned[name_col].fillna("").astype(str).str.strip()
+    cleaned["Amount"] = pd.to_numeric(cleaned.get("Amount", 0.0), errors="coerce").fillna(0)
+    filtered = cleaned[(cleaned[name_col] != "") | (cleaned["Amount"] != 0)]
+    return [(row[name_col], float(row["Amount"])) for _, row in filtered.iterrows()]
+
 with st.form("finance_rows_form"):
     rows_col_a, rows_col_b = st.columns(2)
 
@@ -132,16 +141,6 @@ debts_total = pd.to_numeric(
 ).fillna(0).sum()
 
 net_worth = assets_total - debts_total
-
-
-def build_items(df: pd.DataFrame, name_col: str) -> list[tuple[str, float]]:
-    if df.empty or name_col not in df.columns:
-        return []
-    cleaned = df.copy()
-    cleaned[name_col] = cleaned[name_col].fillna("").astype(str).str.strip()
-    cleaned["Amount"] = pd.to_numeric(cleaned.get("Amount", 0.0), errors="coerce").fillna(0)
-    filtered = cleaned[(cleaned[name_col] != "") | (cleaned["Amount"] != 0)]
-    return [(row[name_col], float(row["Amount"])) for _, row in filtered.iterrows()]
 
 
 with st.form("finance_log_form"):
