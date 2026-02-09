@@ -1,5 +1,13 @@
 # Changelog: Merchant Auto-Categorization Implementation
 
+## Version 1.0.2 - February 9, 2026
+
+### Changed
+- PDF uploads are now processed via temporary files without saving to `data/uploads`.
+- Documentation updated to reflect temporary PDF handling.
+
+---
+
 ## Version 1.0.1 - February 9, 2026
 
 ### Changed

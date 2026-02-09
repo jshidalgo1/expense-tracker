@@ -140,6 +140,7 @@ password = "$2b$12$VeDlrIbQ/wFkyadrM0QPyuVnbUx7X8DCcdG//zmKWsgqrRLlsyvsi"
 - **Automatic OCR** - Detects image-based PDFs and uses Tesseract OCR for text extraction
 - Intelligent page processing (reverse order to find transactions quickly)
 - Batch processing for multiple statements
+- PDFs are processed via temporary files and deleted immediately after extraction
 
 **Preview & Edit**:
 - Review extracted transactions before saving
@@ -206,7 +207,6 @@ password = "$2b$12$VeDlrIbQ/wFkyadrM0QPyuVnbUx7X8DCcdG//zmKWsgqrRLlsyvsi"
 
 **Files excluded from version control** (via `.gitignore`):
 - `data/expenses.db` - Your complete transaction database
-- `data/uploads/` - Uploaded and processed PDF files
 - `.streamlit/` - Local configuration files
 - Virtual environment files
 
@@ -267,7 +267,6 @@ expense-tracker/
 │   ├── categorizer.py         # Smart categorization with fuzzy matching
 │   └── merchant_learner.py    # Merchant rule suggestions and stats
 ├── data/
-│   ├── uploads/                # Uploaded PDF file storage (local only)
 │   └── expenses.db             # SQLite database (created on first run, .gitignored)
 ├── .gitignore                 # Excluded files from version control
 └── README.md                  # This documentation

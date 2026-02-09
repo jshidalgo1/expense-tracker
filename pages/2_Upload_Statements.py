@@ -1,6 +1,7 @@
 import streamlit as st
 from utils.auth import get_authenticator
 import os
+import tempfile
 import pandas as pd
 from utils.database import (
     add_transaction, get_bank_passwords, get_bank_password,
@@ -34,11 +35,6 @@ if not st.session_state.get('authentication_status'):
 st.title("📄 Upload Bank Statements")
 
 st.markdown("Upload PDF bank statements to automatically extract transactions.")
-
-# Create uploads directory if it doesn't exist
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-UPLOADS_DIR = os.path.join(BASE_DIR, "data", "uploads")
-os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 # Get saved banks
 saved_banks = get_bank_passwords()
@@ -150,18 +146,26 @@ with tab_upload:
             extraction_errors = []
             
             for uploaded_file in uploaded_files:
-                # Save uploaded file
-                file_path = os.path.join(UPLOADS_DIR, uploaded_file.name)
-                with open(file_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
-                
-                # Extract transactions
-                success, transactions, error = extract_transactions(
-                    file_path,
-                    password=password if password else None,
-                    bank_type="auto"
-                )
-                
+                temp_path = None
+                try:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+                        temp_file.write(uploaded_file.getbuffer())
+                        temp_path = temp_file.name
+
+                    # Extract transactions
+                    success, transactions, error = extract_transactions(
+                        temp_path,
+                        password=password if password else None,
+                        bank_type="auto"
+                    )
+                except Exception as exc:
+                    success = False
+                    transactions = []
+                    error = str(exc)
+                finally:
+                    if temp_path and os.path.exists(temp_path):
+                        os.remove(temp_path)
+
                 if success:
                     all_extracted_transactions.append({
                         'filename': uploaded_file.name,
