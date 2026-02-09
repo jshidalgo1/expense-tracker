@@ -43,27 +43,39 @@ col_assets, col_debts = st.columns(2)
 
 with col_assets:
     st.markdown("**Bank Accounts**")
+    if st.button("Add bank row"):
+        st.session_state.finance_assets = pd.concat(
+            [st.session_state.finance_assets, asset_template],
+            ignore_index=True
+        )
     assets_df = st.data_editor(
         st.session_state.finance_assets,
         num_rows="dynamic",
         use_container_width=True,
         column_config={
             "Bank": st.column_config.TextColumn(required=False),
-            "Amount": st.column_config.NumberColumn(min_value=0.0, step=100.0)
-        }
+            "Amount": st.column_config.NumberColumn(min_value=0.0, step=0.01, format="%.2f")
+        },
+        hide_index=True
     )
     st.session_state.finance_assets = assets_df
 
 with col_debts:
     st.markdown("**Debts**")
+    if st.button("Add debt row"):
+        st.session_state.finance_debts = pd.concat(
+            [st.session_state.finance_debts, debt_template],
+            ignore_index=True
+        )
     debts_df = st.data_editor(
         st.session_state.finance_debts,
         num_rows="dynamic",
         use_container_width=True,
         column_config={
             "Debt": st.column_config.TextColumn(required=False),
-            "Amount": st.column_config.NumberColumn(min_value=0.0, step=100.0)
-        }
+            "Amount": st.column_config.NumberColumn(min_value=0.0, step=0.01, format="%.2f")
+        },
+        hide_index=True
     )
     st.session_state.finance_debts = debts_df
 
