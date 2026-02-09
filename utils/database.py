@@ -7,6 +7,7 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 DB_PATH = os.path.join(DATA_DIR, "expenses.db")
+OVERALL_BUDGET_CATEGORY = "__overall__"
 
 def get_connection():
     """Create a database connection."""
@@ -72,6 +73,19 @@ def init_db():
             category TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             last_used TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Create budget_targets table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS budget_targets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            month TEXT NOT NULL,
+            category TEXT NOT NULL,
+            amount REAL NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (month, category)
         )
     """)
     
@@ -176,6 +190,17 @@ def get_date_range() -> Tuple[Optional[str], Optional[str]]:
         return row[0], row[1]
     return None, None
 
+def get_transaction_months() -> List[str]:
+    """Get distinct months (YYYY-MM) that have transactions."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT DISTINCT substr(date, 1, 7) AS month FROM transactions ORDER BY month DESC")
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [row['month'] for row in rows]
+
 # ============= CATEGORY OPERATIONS =============
 
 def add_category(name: str) -> bool:
@@ -246,6 +271,59 @@ def delete_category(name: str) -> Tuple[bool, str]:
         return True, f"Category '{name}' deleted successfully"
     else:
         return False, f"Category '{name}' not found"
+
+# ============= BUDGET OPERATIONS =============
+
+def upsert_budget_target(month: str, category: Optional[str], amount: float) -> bool:
+    """Insert or update a monthly budget target for a category or overall."""
+    category_value = category if category is not None else OVERALL_BUDGET_CATEGORY
+
+    return execute_query(
+        """
+        INSERT INTO budget_targets (month, category, amount)
+        VALUES (?, ?, ?)
+        ON CONFLICT(month, category) DO UPDATE SET
+            amount = excluded.amount,
+            updated_at = CURRENT_TIMESTAMP
+        """,
+        (month, category_value, amount)
+    )
+
+def delete_budget_target(month: str, category: Optional[str]) -> bool:
+    """Delete a monthly budget target for a category or overall."""
+    category_value = category if category is not None else OVERALL_BUDGET_CATEGORY
+    return execute_query(
+        "DELETE FROM budget_targets WHERE month = ? AND category = ?",
+        (month, category_value)
+    )
+
+def get_budget_targets(month: str) -> Dict[Optional[str], float]:
+    """Get all budget targets for a given month."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT category, amount FROM budget_targets WHERE month = ?", (month,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    targets: Dict[Optional[str], float] = {}
+    for row in rows:
+        category = row['category']
+        key = None if category == OVERALL_BUDGET_CATEGORY else category
+        targets[key] = row['amount']
+
+    return targets
+
+def get_budget_months() -> List[str]:
+    """Get distinct months (YYYY-MM) that have budget targets."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT DISTINCT month FROM budget_targets ORDER BY month DESC")
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [row['month'] for row in rows]
 
 # ============= BANK PASSWORD OPERATIONS =============
 

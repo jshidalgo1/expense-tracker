@@ -61,6 +61,7 @@ if authentication_status:
         - **Upload Statements**: PDF import
         - **Dashboard**: View analytics
         - **Categories**: Manage categories
+        - **Goals**: Monthly budgets and limits
         """)
     
     # Main page content
@@ -80,6 +81,9 @@ if authentication_status:
     ### 📊 Analytics
     View your spending patterns and insights in the **Dashboard**.
     
+    ### 🎯 Goals
+    Set monthly budgets per category and track your progress.
+
     ### 🏷️ Categories
     Manage your expense categories in the **Categories** page.
     
