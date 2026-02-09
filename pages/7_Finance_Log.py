@@ -206,6 +206,32 @@ history = pd.DataFrame({
 
 st.dataframe(history, width="stretch", hide_index=True)
 
+st.subheader("🗑️ Delete a Log")
+log_options = [
+    {
+        "label": f"{row['log_date'].strftime('%Y-%m-%d')} — ₱{row['net_worth']:,.2f}",
+        "id": int(row['id'])
+    }
+    for _, row in df.iterrows()
+]
+
+selected_label = st.selectbox(
+    "Select a log to delete",
+    options=[opt["label"] for opt in log_options]
+)
+
+selected_log_id = next(
+    opt["id"] for opt in log_options if opt["label"] == selected_label
+)
+
+confirm_delete = st.checkbox("I understand this will permanently delete the log")
+
+if st.button("Delete selected log", type="primary", disabled=not confirm_delete):
+    if db.delete_finance_log(selected_log_id):
+        st.success("✅ Log deleted")
+        st.rerun()
+    st.error("Log not found. Please refresh and try again.")
+
 st.subheader("🧩 Breakdown per Log")
 if items_df.empty:
     st.info("No breakdown items saved yet.")

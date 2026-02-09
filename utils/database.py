@@ -522,6 +522,20 @@ def get_finance_log_items(log_ids: List[int]) -> List[Dict]:
 
     return [dict(row) for row in rows]
 
+def delete_finance_log(log_id: int) -> bool:
+    """Delete a finance log and its related items."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM finance_log_items WHERE log_id = ?", (log_id,))
+    cursor.execute("DELETE FROM finance_logs WHERE id = ?", (log_id,))
+
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+
+    return deleted
+
 def replace_finance_current_items(item_type: str, items: List[Tuple[str, float]]) -> None:
     """Replace current finance items for a given type (asset or debt)."""
     conn = get_connection()
