@@ -139,30 +139,3 @@ if categories and all_transactions:
 else:
     st.info("No transaction data available yet.")
 
-# Tips
-st.divider()
-
-st.markdown("""
-### 💡 Category Management Tips
-
-1. **Keep it Simple**: Start with broad categories and refine as needed
-2. **Merge Similar**: If you have similar categories (e.g., "Food" and "Dining"), rename one to match the other
-3. **Can't Delete?**: Categories with existing transactions cannot be deleted. Rename them instead or keep them for historical data
-4. **Auto-Created**: Categories from PDF uploads are created automatically based on merchant names
-5. **Review Regularly**: Check this page after uploading statements to merge auto-created categories
-
-### 🎯 Suggested Categories
-
-Here are some common expense categories you might want to create:
-
-- **Food & Dining** - Restaurants, groceries, food delivery
-- **Transportation** - Gas, public transport, ride-sharing
-- **Shopping** - Clothing, electronics, general purchases
-- **Utilities** - Electric, water, internet, phone bills
-- **Entertainment** - Movies, streaming, hobbies
-- **Healthcare** - Medical, dental, pharmacy
-- **Bills & Fees** - Credit card fees, subscriptions, insurance
-- **Education** - Courses, books, training
-- **Personal Care** - Salon, gym, wellness
-- **Travel** - Hotels, flights, vacation expenses
-""")
