@@ -112,6 +112,17 @@ def init_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Create finance_current_items table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS finance_current_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_type TEXT NOT NULL,
+            name TEXT NOT NULL,
+            amount REAL NOT NULL,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     
     conn.commit()
     conn.close()
@@ -505,6 +516,45 @@ def get_finance_log_items(log_ids: List[int]) -> List[Dict]:
         WHERE log_id IN ({placeholders})
         ORDER BY log_id ASC, item_type ASC, name ASC
     """, log_ids)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
+
+def replace_finance_current_items(item_type: str, items: List[Tuple[str, float]]) -> None:
+    """Replace current finance items for a given type (asset or debt)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM finance_current_items WHERE item_type = ?", (item_type,))
+
+    if items:
+        cursor.executemany(
+            """
+            INSERT INTO finance_current_items (item_type, name, amount, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            """,
+            [(item_type, name, amount) for name, amount in items]
+        )
+
+    conn.commit()
+    conn.close()
+
+def get_finance_current_items(item_type: str) -> List[Dict]:
+    """Get current finance items for a given type (asset or debt)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT name, amount
+        FROM finance_current_items
+        WHERE item_type = ?
+        ORDER BY id ASC
+        """,
+        (item_type,)
+    )
 
     rows = cursor.fetchall()
     conn.close()

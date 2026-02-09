@@ -39,10 +39,22 @@ assets_editor_key = "finance_assets_editor"
 debts_editor_key = "finance_debts_editor"
 
 if assets_data_key not in st.session_state:
-    st.session_state[assets_data_key] = asset_template
+    existing_assets = db.get_finance_current_items("asset")
+    if existing_assets:
+        st.session_state[assets_data_key] = pd.DataFrame(existing_assets).rename(
+            columns={"name": "Bank", "amount": "Amount"}
+        )
+    else:
+        st.session_state[assets_data_key] = asset_template
 
 if debts_data_key not in st.session_state:
-    st.session_state[debts_data_key] = debt_template
+    existing_debts = db.get_finance_current_items("debt")
+    if existing_debts:
+        st.session_state[debts_data_key] = pd.DataFrame(existing_debts).rename(
+            columns={"name": "Debt", "amount": "Amount"}
+        )
+    else:
+        st.session_state[debts_data_key] = debt_template
 
 col_assets, col_debts = st.columns(2)
 
@@ -99,6 +111,14 @@ with st.form("finance_rows_form"):
     if save_rows:
         st.session_state[assets_data_key] = assets_df
         st.session_state[debts_data_key] = debts_df
+        db.replace_finance_current_items(
+            "asset",
+            build_items(st.session_state[assets_data_key], "Bank")
+        )
+        db.replace_finance_current_items(
+            "debt",
+            build_items(st.session_state[debts_data_key], "Debt")
+        )
         st.success("✅ Rows saved")
 
 assets_total = pd.to_numeric(
