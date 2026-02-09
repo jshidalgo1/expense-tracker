@@ -1,7 +1,5 @@
 import streamlit as st
-import streamlit_authenticator as stauth
-import yaml
-from yaml.loader import SafeLoader
+from utils.auth import get_authenticator
 import os
 import pandas as pd
 from utils.database import (
@@ -20,17 +18,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# Authentication check - Load config from YAML file
-with open('config.yaml') as file:
-    config = yaml.load(file, Loader=SafeLoader)
-
-authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days'],
-    auto_hash=False
-)
+# Authentication check - Load config from Streamlit secrets
+authenticator = get_authenticator()
 
 try:
     authenticator.login()

@@ -1,7 +1,5 @@
 import streamlit as st
-import streamlit_authenticator as stauth
-import yaml
-from yaml.loader import SafeLoader
+from utils.auth import get_authenticator
 from utils.database import init_db
 
 # Page configuration
@@ -15,17 +13,8 @@ st.set_page_config(
 # Initialize database
 init_db()
 
-# Authentication - Load config from YAML file
-with open('config.yaml') as file:
-    config = yaml.load(file, Loader=SafeLoader)
-
-authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days'],
-    auto_hash=False
-)
+# Authentication - Load config from Streamlit secrets
+authenticator = get_authenticator()
 
 # Create login widget
 try:

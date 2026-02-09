@@ -8,7 +8,7 @@ A mobile-friendly, password-protected personal expense tracking application buil
 
 ## ✨ Features
 
-- 🔐 **Secure Authentication** - Password-protected with bcrypt hashing using YAML configuration
+- 🔐 **Secure Authentication** - Password-protected with bcrypt hashing using Streamlit secrets
 - ✍️ **Manual Entry** - Quick expense input with smart category suggestions based on merchant names
 - 📄 **PDF Upload** - Extract transactions from password-protected bank statements (BPI, UnionBank, auto-detected formats)
 - 📸 **OCR Support** - Automatic optical character recognition for scanned/image-based PDFs
@@ -61,23 +61,37 @@ The app will open in your browser at `http://localhost:8501`
 
 ### Authentication
 
-The application uses YAML-based configuration for authentication:
+The application uses Streamlit secrets for authentication:
 
-- **Config File**: `config.yaml` - Contains user credentials and session settings
-- **Credentials**: Default username and password are configured in `config.yaml`
+- **Secrets File**: `.streamlit/secrets.toml` - Contains user credentials and session settings
+- **Credentials**: Default username and password are configured in `.streamlit/secrets.toml`
 - **Password Hashing**: Passwords are hashed using bcrypt for security
 
 To update credentials:
-1. Edit `config.yaml` with new username/password
+1. Edit `.streamlit/secrets.toml` with new username/password
 2. The application will use the updated credentials on next login
+
+Example `.streamlit/secrets.toml`:
+
+```toml
+[cookie]
+expiry_days = 30
+key = "random_signature_key_change_this_in_production"
+name = "expense_tracker_cookie"
+
+[credentials.usernames.jsmith]
+email = "jsmith@gmail.com"
+name = "John Smith"
+password = "$2b$12$VeDlrIbQ/wFkyadrM0QPyuVnbUx7X8DCcdG//zmKWsgqrRLlsyvsi"
+```
 
 ## 📖 User Guide
 
 ### 🔐 Login
 
 1. Open the app in your browser (http://localhost:8501)
-2. Enter your username (default: configured in `config.yaml`)
-3. Enter your password (default: configured in `config.yaml`)
+2. Enter your username (default: configured in `.streamlit/secrets.toml`)
+3. Enter your password (default: configured in `.streamlit/secrets.toml`)
 4. Click "Login"
 
 ### ✍️ Adding Expenses Manually
@@ -187,7 +201,7 @@ To update credentials:
 - ✅ PDF passwords stored locally only
 - ✅ No external API calls or third-party trackers
 - ✅ Sensitive files excluded from git version control
-- ✅ YAML-based configuration (easy to customize)
+- ✅ Secrets-based configuration (easy to customize)
 - ✅ No telemetry or data collection
 
 **Files excluded from version control** (via `.gitignore`):
@@ -232,7 +246,8 @@ git push -u origin main
 ```
 expense-tracker/
 ├── app.py                      # Main application with authentication & home page
-├── config.yaml                 # User credentials and session configuration
+├── .streamlit/
+│   └── secrets.toml            # User credentials and session configuration (gitignored)
 ├── requirements.txt            # Python dependencies (streamlit, pikepdf, etc.)
 ├── docs/
 │   ├── _INDEX.md               # Documentation index and quick links
@@ -311,13 +326,13 @@ expense-tracker/
 ### Authentication Issues
 
 **Problem**: Can't login or session expires quickly
-- **Solution**: Check `config.yaml` exists and contains valid credentials. Verify the username and password match exactly (case-sensitive).
+- **Solution**: Check `.streamlit/secrets.toml` exists and contains valid credentials. Verify the username and password match exactly (case-sensitive).
 
 **Problem**: "Username/password is incorrect" even with correct credentials
 - **Solution**: 
   - Clear browser cache and cookies
   - Restart Streamlit application
-  - Verify `config.yaml` has proper YAML formatting
+   - Verify `.streamlit/secrets.toml` has proper TOML formatting
   - Check for hidden characters or extra spaces in credentials
 
 ### Database Issues
@@ -377,13 +392,13 @@ git push -u origin main
 
 3. **Add Secrets** (in Streamlit Cloud dashboard)
    - Go to app settings → Secrets
-   - Add your authentication credentials matching `config.yaml` format
+   - Add your authentication credentials matching `.streamlit/secrets.toml` format
 
 4. **Important Security Notes**
    - Change default credentials before deploying
    - Use strong, unique passwords
    - Do not commit `data/expenses.db` to GitHub
-   - Store `config.yaml` in Streamlit Secrets, not in repository
+   - Store `.streamlit/secrets.toml` in Streamlit Secrets, not in repository
 
 ## 📊 Data Management
 

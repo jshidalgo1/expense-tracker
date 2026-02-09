@@ -1,7 +1,5 @@
 import streamlit as st
-import streamlit_authenticator as stauth
-import yaml
-from yaml.loader import SafeLoader
+from utils.auth import get_authenticator
 from datetime import date
 from utils.database import add_transaction, get_categories
 from utils.categorizer import suggest_category, get_or_create_category
@@ -13,17 +11,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# Authentication check - Load config from YAML file
-with open('config.yaml') as file:
-    config = yaml.load(file, Loader=SafeLoader)
-
-authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days'],
-    auto_hash=False
-)
+# Authentication check - Load config from Streamlit secrets
+authenticator = get_authenticator()
 
 try:
     authenticator.login()
