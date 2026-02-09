@@ -1,6 +1,8 @@
 import streamlit as st
 from utils.auth import get_authenticator
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
 from utils.database import (
     get_transactions,
@@ -8,6 +10,7 @@ from utils.database import (
     get_budget_targets,
     get_finance_logs
 )
+from utils.merchant_learner import get_learning_stats
 
 # Page configuration
 st.set_page_config(
@@ -83,32 +86,7 @@ if not transactions:
 df = pd.DataFrame(transactions)
 df['date'] = pd.to_datetime(df['date'])
 
-# Spending overview
-st.subheader("💰 Spending Overview")
-
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    total_expenses = df['amount'].sum()
-    st.metric("Total Expenses", f"₱{total_expenses:,.2f}")
-
-with col2:
-    avg_transaction = df['amount'].mean()
-    st.metric("Average Transaction", f"₱{avg_transaction:,.2f}")
-
-with col3:
-    transaction_count = len(df)
-    st.metric("Total Transactions", f"{transaction_count:,}")
-
-with col4:
-    category_count = df['category'].nunique()
-    st.metric("Categories Used", category_count)
-
-st.divider()
-
-# Budget status (current month)
-st.subheader("🎯 Budget Status (Current Month)")
-
+# Current month budget stats
 current_month = datetime.now().strftime("%Y-%m")
 month_start, month_end = get_month_bounds(current_month)
 month_from = month_start.strftime("%Y-%m-%d")
@@ -126,31 +104,114 @@ else:
 
 overall_budget = float(budget_targets.get(None, 0.0))
 
-col1, col2, col3 = st.columns(3)
+# At-a-glance visuals
+st.subheader("✨ At a Glance")
+
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("Total Spent", f"₱{month_total:,.2f}")
+    st.caption("This Month vs Budget")
+    if overall_budget > 0:
+        usage_pct = (month_total / overall_budget) * 100
+        gauge_max = max(100, min(150, (int(usage_pct / 10) + 1) * 10))
+        fig_budget = go.Figure(
+            go.Indicator(
+                mode="gauge+number",
+                value=usage_pct,
+                number={"suffix": "%"},
+                gauge={
+                    "axis": {"range": [0, gauge_max]},
+                    "bar": {"color": "#1f77b4"},
+                    "steps": [
+                        {"range": [0, 80], "color": "#dfeaf7"},
+                        {"range": [80, 100], "color": "#f6e6a6"},
+                        {"range": [100, gauge_max], "color": "#f5c6cb"}
+                    ],
+                    "threshold": {
+                        "line": {"color": "#d62728", "width": 3},
+                        "thickness": 0.75,
+                        "value": 100
+                    }
+                }
+            )
+        )
+        fig_budget.update_layout(height=240, margin=dict(l=10, r=10, t=25, b=10))
+        st.plotly_chart(fig_budget, width="stretch")
+        st.caption(f"₱{month_total:,.0f} of ₱{overall_budget:,.0f}")
+    else:
+        st.info("Set an overall budget in Goals to track this gauge.")
+        st.metric("Spent This Month", f"₱{month_total:,.2f}")
 
 with col2:
-    st.metric("Overall Budget", f"₱{overall_budget:,.2f}" if overall_budget > 0 else "Not set")
+    st.caption("Category Share")
+    category_spending = df.groupby('category')['amount'].sum().sort_values(ascending=False)
+    if len(category_spending) > 5:
+        top_categories = category_spending.head(5)
+        other_total = category_spending.iloc[5:].sum()
+        category_spending = pd.concat([top_categories, pd.Series({'Other': other_total})])
+    fig_category = px.pie(
+        values=category_spending.values,
+        names=category_spending.index,
+        hole=0.5
+    )
+    fig_category.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        hovertemplate='<b>%{label}</b><br>₱%{value:,.2f}<br>%{percent}<extra></extra>'
+    )
+    fig_category.update_layout(height=240, margin=dict(l=10, r=10, t=10, b=10))
+    st.plotly_chart(fig_category, width="stretch")
 
 with col3:
-    if overall_budget > 0:
-        remaining = overall_budget - month_total
-        st.metric("Remaining", f"₱{remaining:,.2f}")
-    else:
-        st.metric("Remaining", "-")
+    st.caption("Account Split")
+    account_spending = df.groupby('account')['amount'].sum().sort_values(ascending=False)
+    account_df = account_spending.reset_index()
+    account_df.columns = ['Account', 'Amount']
+    account_df['Percent'] = (account_df['Amount'] / account_df['Amount'].sum()) * 100
+    fig_account = px.bar(
+        account_df,
+        x='Account',
+        y='Percent',
+        text=account_df['Percent'].map(lambda x: f"{x:.0f}%"),
+        labels={'Percent': 'Percent'}
+    )
+    fig_account.update_traces(hovertemplate='<b>%{x}</b><br>%{y:.1f}%<extra></extra>')
+    fig_account.update_layout(
+        height=240,
+        margin=dict(l=10, r=10, t=10, b=10),
+        yaxis=dict(range=[0, 100], ticksuffix='%')
+    )
+    st.plotly_chart(fig_account, width="stretch")
 
-if overall_budget > 0:
-    usage_pct = (month_total / overall_budget) * 100
-    if month_total > overall_budget:
-        st.error(f"🚨 Over limit: {usage_pct:.0f}% used")
-    elif usage_pct >= 80:
-        st.warning(f"⚠️ Near limit: {usage_pct:.0f}% used")
-    else:
-        st.success(f"✅ On track: {usage_pct:.0f}% used")
-else:
-    st.info("Set an overall budget in Goals to track monthly limits.")
+with col4:
+    st.caption("Auto-Categorization")
+    learning_stats = get_learning_stats()
+    coverage_pct = learning_stats.get('coverage_percentage', 0.0)
+    st.metric("Coverage", f"{coverage_pct:.0f}%")
+    st.progress(min(coverage_pct / 100, 1.0))
+    st.caption(
+        f"{learning_stats.get('transactions_covered_by_mapping', 0):,} of "
+        f"{learning_stats.get('total_transactions', 0):,} txns"
+    )
+
+st.divider()
+
+# Trend line
+st.subheader("📈 Spending Trend")
+
+daily_spending = df.groupby(df['date'].dt.date)['amount'].sum().reset_index()
+daily_spending.columns = ['Date', 'Amount']
+daily_spending['Rolling7'] = daily_spending['Amount'].rolling(7, min_periods=1).mean()
+
+fig_trend = px.line(
+    daily_spending,
+    x='Date',
+    y=['Amount', 'Rolling7'],
+    labels={'value': 'Amount (₱)', 'variable': 'Series'}
+)
+fig_trend.update_traces(hovertemplate='₱%{y:,.2f}<extra></extra>')
+fig_trend.update_layout(height=360, margin=dict(l=10, r=10, t=10, b=10))
+st.plotly_chart(fig_trend, width="stretch")
 
 # Finance summary
 st.divider()
