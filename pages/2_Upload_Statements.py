@@ -5,10 +5,8 @@ import tempfile
 import pandas as pd
 from utils.database import (
     add_transaction, get_bank_passwords, get_bank_password,
-    add_bank_password, delete_bank_password, get_transactions,
+    add_bank_password, delete_bank_password,
 )
-from utils.database import delete_all_transactions
-import time
 from utils.pdf_parser import extract_transactions
 from utils.categorizer import auto_categorize, get_or_create_category
 
@@ -34,7 +32,6 @@ if not st.session_state.get('authentication_status'):
 # Main content
 st.title("📄 Upload Bank Statements")
 
-st.markdown("Upload PDF bank statements to automatically extract transactions. PDFs are processed temporarily and not stored.")
 
 # Get saved banks
 saved_banks = get_bank_passwords()
@@ -214,7 +211,6 @@ with tab_upload:
         # Step 2: Preview all transactions with edit/delete options
         st.divider()
         st.subheader("👀 Preview & Edit Transactions")
-        st.markdown("Review the transactions below. You can remove rows or edit details before saving to the database.")
         
         # Show current transaction count
         st.write(f"**Total Transactions: {len(st.session_state.preview_data)}**")
@@ -388,7 +384,6 @@ with tab_upload:
 
 with tab_manage:
     st.subheader("🔐 Manage Saved Banks")
-    st.markdown("View and manage saved bank passwords for quick PDF processing.")
     
     if saved_banks:
         for bank in saved_banks:
@@ -397,7 +392,7 @@ with tab_manage:
                 col1, col2, col3 = st.columns([3, 2, 1])
                 
                 with col1:
-                    st.markdown(f"**🏦 {bank['bank_name']}**")
+                    st.write(f"🏦 {bank['bank_name']}")
                 
                 with col2:
                     # Show masked password
@@ -412,37 +407,3 @@ with tab_manage:
     else:
         st.info("No saved bank passwords yet. Add a bank in the 'Upload & Add' tab.")
 
-# Danger Zone (keep outside tabs)
-st.divider()
-with st.expander("⚠️ Danger Zone"):
-    st.warning("These actions are irreversible!")
-    
-    # Show current count
-    count = len(get_transactions())
-    st.write(f"Current transactions: **{count}**")
-    
-    if st.button("🗑️ Clear All Transactions", type="primary", help="Delete ALL transactions from the database"):
-        
-        delete_all_transactions()
-        st.success("✅ All transactions have been deleted.")
-        time.sleep(1.5)
-        st.rerun()
-
-# Tips
-st.divider()
-
-st.markdown("""
-### 💡 Tips for Best Results
-
-1. **Password Protection**: Most bank PDFs are password-protected. Enter the password before processing.
-2. **Save Passwords**: Check "Save password" to avoid re-entering it for future uploads from the same bank.
-3. **Multiple Files**: You can upload multiple statements at once if they use the same password.
-4. **Auto-Categorization**: Transactions are automatically categorized based on merchant names.
-5. **Review Categories**: Check the Categories page to merge or rename auto-created categories.
-
-### 🔒 Privacy & Security
-
-- Passwords are stored locally in your database
-- PDF files are processed temporarily and not stored
-- No data is sent to external servers
-""")

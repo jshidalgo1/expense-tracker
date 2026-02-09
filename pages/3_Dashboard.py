@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from utils.database import (
     get_transactions, get_categories, get_date_range,
-    update_transaction_category, update_category,
+    update_transaction, delete_transaction,
     get_merchant_mappings, add_merchant_mapping, delete_merchant_mapping, update_merchant_mapping,
     find_similar_transactions, bulk_update_category
 )
@@ -33,6 +33,9 @@ if not st.session_state.get('authentication_status'):
 # Initialize refresh counter for data updates
 if 'data_refresh_key' not in st.session_state:
     st.session_state.data_refresh_key = 0
+
+if 'editing_transactions' not in st.session_state:
+    st.session_state.editing_transactions = {}
 
 # Main content
 st.title("📊 Expense Dashboard")
@@ -304,10 +307,12 @@ with info_col2:
 if len(display_df) == 0:
     st.info("No transactions found matching your search.")
 else:
-    available_categories = [c for c in get_categories() if c != "Uncategorized"]
+    available_categories = get_categories()
+    if "Uncategorized" not in available_categories:
+        available_categories = ["Uncategorized"] + available_categories
     
     # Create columns for header
-    col1, col2, col3, col4, col5, col6 = st.columns([1.2, 2.5, 1.5, 1, 1.2, 0.8])
+    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([1.2, 2.5, 1.4, 1, 1.2, 0.9, 0.9, 0.9])
     
     with col1:
         st.write("**Date**")
@@ -321,12 +326,17 @@ else:
         st.write("**Account**")
     with col6:
         st.write("**Source**")
+    with col7:
+        st.write("**Edit**")
+    with col8:
+        st.write("**Delete**")
     
     st.divider()
     
-    # Display transactions with editable categories
+    # Display transactions with editable fields
     for idx, row in display_df.iterrows():
-        col1, col2, col3, col4, col5, col6 = st.columns([1.2, 2.5, 1.5, 1, 1.2, 0.8])
+        trans_id = row['id']
+        col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([1.2, 2.5, 1.4, 1, 1.2, 0.9, 0.9, 0.9])
         
         with col1:
             st.write(pd.to_datetime(row['date']).strftime('%Y-%m-%d'))
@@ -335,22 +345,7 @@ else:
             st.write(row['description'][:40])
         
         with col3:
-            # Editable category dropdown
-            trans_id = row['id']
-            # Include refresh key in widget key to force regeneration on data updates
-            new_category = st.selectbox(
-                "Category",
-                options=available_categories,
-                index=available_categories.index(row['category']) if row['category'] in available_categories else 0,
-                key=f"trans_cat_{trans_id}_{st.session_state.data_refresh_key}",
-                label_visibility="collapsed"
-            )
-            
-            # Update immediately if changed
-            if new_category != row['category']:
-                update_transaction_category(trans_id, new_category)
-                st.session_state.data_refresh_key += 1
-                st.rerun()
+            st.write(row['category'])
         
         with col4:
             st.write(f"₱{row['amount']:.2f}")
@@ -360,6 +355,91 @@ else:
         
         with col6:
             st.write(row['source'])
+
+        with col7:
+            if st.button("✏️", key=f"edit_{trans_id}"):
+                current = st.session_state.editing_transactions.get(trans_id, False)
+                st.session_state.editing_transactions[trans_id] = not current
+                st.rerun()
+
+        with col8:
+            if st.button("🗑️", key=f"delete_{trans_id}"):
+                if delete_transaction(trans_id):
+                    st.session_state.data_refresh_key += 1
+                    st.rerun()
+                else:
+                    st.error("Failed to delete transaction.")
+
+        if st.session_state.editing_transactions.get(trans_id, False):
+            edit_col1, edit_col2, edit_col3 = st.columns(3)
+            edit_col4, edit_col5, edit_col6 = st.columns(3)
+
+            with edit_col1:
+                new_date = st.date_input(
+                    "Date",
+                    value=pd.to_datetime(row['date']).date(),
+                    key=f"edit_date_{trans_id}_{st.session_state.data_refresh_key}"
+                )
+            with edit_col2:
+                new_description = st.text_input(
+                    "Description",
+                    value=row['description'],
+                    key=f"edit_desc_{trans_id}_{st.session_state.data_refresh_key}"
+                )
+            with edit_col3:
+                new_category = st.selectbox(
+                    "Category",
+                    options=available_categories,
+                    index=available_categories.index(row['category']) if row['category'] in available_categories else 0,
+                    key=f"edit_cat_{trans_id}_{st.session_state.data_refresh_key}"
+                )
+
+            with edit_col4:
+                new_amount = st.number_input(
+                    "Amount",
+                    value=float(row['amount']),
+                    min_value=0.0,
+                    step=0.01,
+                    key=f"edit_amount_{trans_id}_{st.session_state.data_refresh_key}"
+                )
+            with edit_col5:
+                new_account = st.selectbox(
+                    "Account",
+                    options=all_accounts,
+                    index=all_accounts.index(row['account']) if row['account'] in all_accounts else 0,
+                    key=f"edit_account_{trans_id}_{st.session_state.data_refresh_key}"
+                )
+            with edit_col6:
+                new_source = st.text_input(
+                    "Source",
+                    value=row['source'],
+                    key=f"edit_source_{trans_id}_{st.session_state.data_refresh_key}"
+                )
+
+            action_col1, action_col2 = st.columns(2)
+
+            with action_col1:
+                if st.button("✅ Save", key=f"save_{trans_id}"):
+                    updated = update_transaction(
+                        transaction_id=trans_id,
+                        date=str(new_date),
+                        description=new_description,
+                        category=new_category,
+                        amount=float(new_amount),
+                        account=new_account,
+                        source=new_source
+                    )
+                    if updated:
+                        st.session_state.editing_transactions[trans_id] = False
+                        st.session_state.data_refresh_key += 1
+                        st.rerun()
+                    else:
+                        st.error("Failed to update transaction.")
+
+            with action_col2:
+                if st.button("❌ Cancel", key=f"cancel_{trans_id}"):
+                    st.session_state.editing_transactions[trans_id] = False
+                    st.rerun()
     
     # Pagination controls
     st.divider()

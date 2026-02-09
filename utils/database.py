@@ -200,17 +200,33 @@ def delete_transaction(transaction_id: int) -> bool:
     
     return deleted
 
-def delete_all_transactions() -> bool:
-    """Delete all transactions from the database."""
+def update_transaction(
+    transaction_id: int,
+    date: str,
+    description: str,
+    category: str,
+    amount: float,
+    account: str,
+    source: str
+) -> bool:
+    """Update all editable fields for a transaction."""
     conn = get_connection()
     cursor = conn.cursor()
-    
-    cursor.execute("DELETE FROM transactions")
-    
+
+    cursor.execute(
+        """
+        UPDATE transactions
+        SET date = ?, description = ?, category = ?, amount = ?, account = ?, source = ?
+        WHERE id = ?
+        """,
+        (date, description, category, amount, account, source, transaction_id)
+    )
+
+    updated = cursor.rowcount > 0
     conn.commit()
     conn.close()
-    
-    return True
+
+    return updated
 
 def get_date_range() -> Tuple[Optional[str], Optional[str]]:
     """Get the min and max dates from transactions."""
