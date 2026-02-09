@@ -2,10 +2,10 @@ import streamlit as st
 from utils.auth import get_authenticator
 from datetime import date, datetime, timedelta
 import pandas as pd
+from utils import database as db
 from utils.database import (
     get_categories,
     get_transactions,
-    get_transaction_months,
     get_budget_months,
     get_budget_targets,
     upsert_budget_target,
@@ -41,6 +41,14 @@ def get_month_bounds(month_str: str) -> tuple[date, date]:
     else:
         month_end = date(year, month + 1, 1) - timedelta(days=1)
     return month_start, month_end
+
+def get_transaction_months() -> list[str]:
+    if hasattr(db, "get_transaction_months"):
+        return db.get_transaction_months()
+
+    transactions = get_transactions()
+    months = {trans['date'][:7] for trans in transactions if trans.get('date')}
+    return sorted(months, reverse=True)
 
 # Main content
 st.title("🎯 Monthly Goals")
