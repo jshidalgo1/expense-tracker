@@ -57,6 +57,7 @@ if authentication_status:
         st.markdown("""
         ### 📱 Navigation
         Use the sidebar to navigate between pages:
+        - **Summary**: At-a-glance overview
         - **Add Expense**: Manual entry
         - **Upload Statements**: PDF import
         - **Dashboard**: View analytics
@@ -72,6 +73,9 @@ if authentication_status:
     ## Getting Started
     
     This app helps you track your expenses with ease:
+
+    ### 🧾 Summary
+    Start with **Summary** to see key insights at a glance.
     
     ### ✍️ Manual Entry
     Navigate to **Add Expense** to manually log your transactions.
