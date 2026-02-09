@@ -44,11 +44,17 @@ with st.sidebar:
 
     min_date_str, max_date_str = get_date_range()
     today = datetime.now().date()
-    default_end = today
-    default_start = today - timedelta(days=30)
 
     min_value = datetime.strptime(min_date_str, "%Y-%m-%d").date() if min_date_str else None
     max_value = datetime.strptime(max_date_str, "%Y-%m-%d").date() if max_date_str else None
+
+    default_end = min(max_value, today) if max_value else today
+    default_start = today - timedelta(days=30)
+
+    if min_value and default_start < min_value:
+        default_start = min_value
+    if max_value and default_start > max_value:
+        default_start = max_value
 
     date_range = st.date_input(
         "Date Range",
