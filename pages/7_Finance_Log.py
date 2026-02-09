@@ -53,18 +53,6 @@ with col_assets:
             [st.session_state[assets_data_key], asset_template],
             ignore_index=True
         )
-    assets_df = st.data_editor(
-        st.session_state[assets_data_key],
-        num_rows="dynamic",
-        width="stretch",
-        column_config={
-            "Bank": st.column_config.TextColumn(required=False),
-            "Amount": st.column_config.NumberColumn(min_value=0.0, step=0.01, format="%.2f")
-        },
-        hide_index=True,
-        key=assets_editor_key
-    )
-    st.session_state[assets_data_key] = assets_df
 
 with col_debts:
     st.markdown("**Debts**")
@@ -73,55 +61,14 @@ with col_debts:
             [st.session_state[debts_data_key], debt_template],
             ignore_index=True
         )
-    debts_df = st.data_editor(
-        st.session_state[debts_data_key],
-        num_rows="dynamic",
-        width="stretch",
-        column_config={
-            "Debt": st.column_config.TextColumn(required=False),
-            "Amount": st.column_config.NumberColumn(min_value=0.0, step=0.01, format="%.2f")
-        },
-        hide_index=True,
-        key=debts_editor_key
-    )
-    st.session_state[debts_data_key] = debts_df
 
-assets_total = pd.to_numeric(assets_df.get("Amount", 0.0), errors="coerce").fillna(0).sum()
-debts_total = pd.to_numeric(debts_df.get("Amount", 0.0), errors="coerce").fillna(0).sum()
-net_worth = assets_total - debts_total
+st.caption("Edit rows below, then click Save Rows.")
 
-def build_items(df: pd.DataFrame, name_col: str) -> list[tuple[str, float]]:
-    if df.empty or name_col not in df.columns:
-        return []
-    cleaned = df.copy()
-    cleaned[name_col] = cleaned[name_col].fillna("").astype(str).str.strip()
-    cleaned["Amount"] = pd.to_numeric(cleaned.get("Amount", 0.0), errors="coerce").fillna(0)
-    filtered = cleaned[(cleaned[name_col] != "") | (cleaned["Amount"] != 0)]
-    return [(row[name_col], float(row["Amount"])) for _, row in filtered.iterrows()]
+with st.form("finance_rows_form"):
+    rows_col_a, rows_col_b = st.columns(2)
 
-with st.form("finance_log_form"):
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        log_date = st.date_input("Log date", value=date.today())
-
-    with col2:
-        st.metric("Total assets", f"₱{assets_total:,.2f}")
-
-    with col3:
-        st.caption("Use Save Rows after editing.")
-                log_date.strftime("%Y-%m-%d"),
-                assets_total,
-                debts_total,
-                asset_items,
-                debt_items
-            )
-        else:
-            db.add_finance_log(log_date.strftime("%Y-%m-%d"), assets_total, debts_total)
-        st.caption("Use Save Rows after editing.")
-
-    with st.form("finance_rows_form"):
-        st.markdown("**Edit Rows**")
+    with rows_col_a:
+        st.markdown("**Edit Banks**")
         assets_df = st.data_editor(
             st.session_state[assets_data_key],
             num_rows="dynamic",
@@ -133,6 +80,9 @@ with st.form("finance_log_form"):
             hide_index=True,
             key=assets_editor_key
         )
+
+    with rows_col_b:
+        st.markdown("**Edit Debts**")
         debts_df = st.data_editor(
             st.session_state[debts_data_key],
             num_rows="dynamic",
@@ -144,20 +94,79 @@ with st.form("finance_log_form"):
             hide_index=True,
             key=debts_editor_key
         )
-        save_rows = st.form_submit_button("Save Rows", type="primary", width="stretch")
-        if save_rows:
-            st.session_state[assets_data_key] = assets_df
-            st.session_state[debts_data_key] = debts_df
-            st.success("✅ Rows saved")
+
+    save_rows = st.form_submit_button("Save Rows", type="primary", width="stretch")
+    if save_rows:
+        st.session_state[assets_data_key] = assets_df
+        st.session_state[debts_data_key] = debts_df
+        st.success("✅ Rows saved")
+
+assets_total = pd.to_numeric(
+    st.session_state[assets_data_key].get("Amount", 0.0),
+    errors="coerce"
+).fillna(0).sum()
+
+debts_total = pd.to_numeric(
+    st.session_state[debts_data_key].get("Amount", 0.0),
+    errors="coerce"
+).fillna(0).sum()
+
+net_worth = assets_total - debts_total
+
+
+def build_items(df: pd.DataFrame, name_col: str) -> list[tuple[str, float]]:
+    if df.empty or name_col not in df.columns:
+        return []
+    cleaned = df.copy()
+    cleaned[name_col] = cleaned[name_col].fillna("").astype(str).str.strip()
+    cleaned["Amount"] = pd.to_numeric(cleaned.get("Amount", 0.0), errors="coerce").fillna(0)
+    filtered = cleaned[(cleaned[name_col] != "") | (cleaned["Amount"] != 0)]
+    return [(row[name_col], float(row["Amount"])) for _, row in filtered.iterrows()]
+
+
+with st.form("finance_log_form"):
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        log_date = st.date_input("Log date", value=date.today())
+
+    with col2:
+        st.metric("Total assets", f"₱{assets_total:,.2f}")
+
+    with col3:
+        st.metric("Total debt", f"₱{debts_total:,.2f}")
+
+    st.caption(f"Net worth: ₱{net_worth:,.2f}")
+
+    submit_log = st.form_submit_button("Log Overall Finance", type="primary", width="stretch")
+
+    if submit_log:
+        asset_items = build_items(st.session_state[assets_data_key], "Bank")
+        debt_items = build_items(st.session_state[debts_data_key], "Debt")
+        if hasattr(db, "add_finance_log_with_items"):
+            db.add_finance_log_with_items(
+                log_date.strftime("%Y-%m-%d"),
+                assets_total,
+                debts_total,
+                asset_items,
+                debt_items
+            )
+        else:
+            db.add_finance_log(log_date.strftime("%Y-%m-%d"), assets_total, debts_total)
+            st.info("Saved totals only. Update the app to store per-bank breakdowns.")
+        st.success("✅ Finance log saved")
+        st.rerun()
+
+st.divider()
+
+st.subheader("📊 Finance History")
+
+logs = db.get_finance_logs()
+
+if not logs:
     st.info("No finance logs yet. Add your first log above.")
-    assets_total = pd.to_numeric(
-        st.session_state[assets_data_key].get("Amount", 0.0),
-        errors="coerce"
-    ).fillna(0).sum()
-    debts_total = pd.to_numeric(
-        st.session_state[debts_data_key].get("Amount", 0.0),
-        errors="coerce"
-    ).fillna(0).sum()
+    st.stop()
+
 df = pd.DataFrame(logs)
 df['log_date'] = pd.to_datetime(df['log_date'])
 df['growth_rate'] = df['net_worth'].pct_change() * 100
@@ -176,7 +185,7 @@ history = pd.DataFrame({
     "Growth Rate": df['growth_rate'].map(lambda v: "-" if pd.isna(v) else f"{v:,.2f}%"),
 })
 
-st.dataframe(history, use_container_width=True)
+st.dataframe(history, width="stretch", hide_index=True)
 
 st.subheader("🧩 Breakdown per Log")
 if items_df.empty:
@@ -200,7 +209,7 @@ else:
                     st.dataframe(
                         assets_items[['name', 'amount']]
                             .rename(columns={'name': 'Bank', 'amount': 'Amount (₱)'}),
-                        use_container_width=True,
+                        width="stretch",
                         hide_index=True
                     )
 
@@ -212,7 +221,7 @@ else:
                     st.dataframe(
                         debts_items[['name', 'amount']]
                             .rename(columns={'name': 'Debt', 'amount': 'Amount (₱)'}),
-                        use_container_width=True,
+                        width="stretch",
                         hide_index=True
                     )
 
