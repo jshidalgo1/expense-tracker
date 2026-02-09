@@ -4,7 +4,7 @@ from datetime import date
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from utils.database import add_finance_log_with_items, get_finance_logs, get_finance_log_items
+from utils import database as db
 
 # Page configuration
 st.set_page_config(
@@ -99,13 +99,17 @@ with st.form("finance_log_form"):
     if submit_log:
         asset_items = build_items(assets_df, "Bank")
         debt_items = build_items(debts_df, "Debt")
-        add_finance_log_with_items(
-            log_date.strftime("%Y-%m-%d"),
-            assets_total,
-            debts_total,
-            asset_items,
-            debt_items
-        )
+        if hasattr(db, "add_finance_log_with_items"):
+            db.add_finance_log_with_items(
+                log_date.strftime("%Y-%m-%d"),
+                assets_total,
+                debts_total,
+                asset_items,
+                debt_items
+            )
+        else:
+            db.add_finance_log(log_date.strftime("%Y-%m-%d"), assets_total, debts_total)
+            st.info("Saved totals only. Update the app to store per-bank breakdowns.")
         st.success("✅ Finance log saved")
         st.rerun()
 
@@ -113,7 +117,7 @@ st.divider()
 
 st.subheader("📊 Finance History")
 
-logs = get_finance_logs()
+logs = db.get_finance_logs()
 
 if not logs:
     st.info("No finance logs yet. Add your first log above.")
@@ -124,8 +128,10 @@ df['log_date'] = pd.to_datetime(df['log_date'])
 df['growth_rate'] = df['net_worth'].pct_change() * 100
 
 log_ids = df['id'].tolist()
-items = get_finance_log_items(log_ids)
-items_df = pd.DataFrame(items)
+items_df = pd.DataFrame()
+if hasattr(db, "get_finance_log_items"):
+    items = db.get_finance_log_items(log_ids)
+    items_df = pd.DataFrame(items)
 
 history = pd.DataFrame({
     "Date": df['log_date'].dt.strftime("%Y-%m-%d"),
