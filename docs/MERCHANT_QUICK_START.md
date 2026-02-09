@@ -12,17 +12,17 @@
 ### Modified Files
 ```
 ✅ utils/categorizer.py              - Added batch processing functions
-✅ utils/database.py                 - Added tracking functions
+✅ utils/database.py                 - Added merchant stats helpers
 ```
 
 ## Key Functions
 
 ### In `merchant_learner.py`
 ```python
-suggest_merchant_mappings(min_frequency=3, confidence_threshold=0.8)
+suggest_merchant_mappings(min_frequency=2, confidence_threshold=0.8)
 # → Returns list of (merchant, category, frequency, confidence)
 
-auto_apply_merchant_mappings(min_frequency=3, confidence_threshold=0.8)
+auto_apply_merchant_mappings(min_frequency=2, confidence_threshold=0.8)
 # → Adds all suggested rules to database
 # → Returns {'added': N, 'failed': N, 'skipped': N}
 
@@ -71,7 +71,7 @@ Your Transaction History
 Extract merchant names & group by category
         ↓
    [PATTERN CHECK]
-Find merchants appearing 3+ times with 75%+ confidence
+Find merchants appearing 2+ times with 75%+ confidence
         ↓
   [SUGGESTION]
 Show rules ready to apply
@@ -84,18 +84,18 @@ Future Transactions Auto-Categorized ✅
 
 ## Configuration
 
-**Current defaults** (conservative, high accuracy):
-- Min transactions: 3
+**Current defaults** (balanced):
+- Min transactions: 2
 - Confidence: 75%
 
 **To change**, edit `pages/5_Merchant_Rules.py` line ~60:
 ```python
-suggest_merchant_mappings(min_frequency=3, confidence_threshold=0.75)
+suggest_merchant_mappings(min_frequency=2, confidence_threshold=0.75)
 ```
 
 **Options:**
 - `min_frequency=2, confidence_threshold=0.60` - Aggressive (more suggestions, less accurate)
-- `min_frequency=3, confidence_threshold=0.75` - Balanced (current)
+- `min_frequency=2, confidence_threshold=0.75` - Balanced (current)
 - `min_frequency=5, confidence_threshold=0.90` - Conservative (fewer suggestions, very accurate)
 
 ## Examples
@@ -127,7 +127,7 @@ Now matches:
 
 | Problem | Solution |
 |---------|----------|
-| No suggestions appear | Add more transactions (need 3+ per merchant) |
+| No suggestions appear | Add more transactions (need 2+ per merchant) |
 | Rule not matching | Check merchant name in transaction description |
 | Too many suggestions | Increase `min_frequency` or `confidence_threshold` |
 | Wrong categorization | Delete rule and create a new one |

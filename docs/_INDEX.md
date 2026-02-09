@@ -58,7 +58,7 @@
 ### Enhanced Files
 ```
 🔧 utils/categorizer.py            - Added batch processing (+50 lines)
-🔧 utils/database.py               - Added tracking functions (+50 lines)
+🔧 utils/database.py               - Added merchant stats helpers (+50 lines)
 ```
 
 ---
@@ -100,7 +100,7 @@
 ✅ **One-Click Automation** - Apply all suggestions at once
 ✅ **Manual Control** - Create custom rules anytime
 ✅ **Rule Management** - View, edit, delete rules easily
-✅ **Progress Tracking** - See learning metrics on dashboard
+✅ **Progress Metrics** - See learning metrics on Merchant Rules page
 ✅ **No Setup Required** - Works with existing data
 ✅ **Configurable** - Adjust learning thresholds
 ✅ **Local & Private** - All data stays on your machine
@@ -153,8 +153,7 @@ from utils.categorizer import (
 ### Database Functions
 ```python
 from utils.database import (
-    update_merchant_mapping_usage,      # Track rule usage
-    get_merchant_mapping_stats          # Get statistics
+   get_merchant_mapping_stats          # Get statistics
 )
 ```
 
@@ -182,13 +181,13 @@ See detailed explanations in:
 
 ## ⚙️ Configuration
 
-**Default (Conservative - High Accuracy)**
-- Min Frequency: 3 transactions
+**Default (Balanced)**
+- Min Frequency: 2 transactions
 - Confidence: 75%
 
 **Options**
 - Conservative: min_frequency=5, confidence_threshold=0.90
-- Balanced: min_frequency=3, confidence_threshold=0.75 (current)
+- Balanced: min_frequency=2, confidence_threshold=0.75 (current)
 - Aggressive: min_frequency=2, confidence_threshold=0.60
 
 **To Change**: Edit `pages/5_Merchant_Rules.py` line ~60
@@ -234,7 +233,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for full test results
 
 | Issue | Solution |
 |-------|----------|
-| No suggestions | Add more transactions (need 3+ per merchant) |
+| No suggestions | Add more transactions (need 2+ per merchant) |
 | Rules not matching | Check merchant name in description |
 | Too aggressive | Increase thresholds in config |
 | Errors when opening page | Check Python environment is activated |
@@ -294,7 +293,7 @@ Monitor progress via the dashboard on the 🏪 Merchant Rules page
 
 **Version**: 1.0.0
 **Status**: ✅ Ready for Production
-**Date**: February 8, 2026
+**Date**: February 9, 2026
 **Python**: 3.10+
 **Dependencies**: streamlit, pandas, rapidfuzz, sqlite3
 
@@ -307,7 +306,7 @@ expense-tracker/
 ├── utils/
 │   ├── merchant_learner.py      ✨ NEW - Core learning engine
 │   ├── categorizer.py           🔧 ENHANCED - Batch processing
-│   ├── database.py              🔧 ENHANCED - Tracking functions
+│   ├── database.py              🔧 ENHANCED - Stats helpers
 │   └── ... (other files)
 ├── pages/
 │   ├── 5_Merchant_Rules.py      ✨ NEW - Management UI
@@ -323,6 +322,6 @@ expense-tracker/
 
 ---
 
-**Last Updated**: February 8, 2026
+**Last Updated**: February 9, 2026
 **Total Documentation**: 5 comprehensive guides + inline code documentation
 **Ready to Use**: Yes ✅

@@ -20,7 +20,6 @@
 │  │   └── get_categorization_confidence_breakdown() [NEW]                │
 │  │                                                                      │
 │  └── utils/database.py                      (ENHANCED)                  │
-│      ├── update_merchant_mapping_usage()    [NEW]                       │
 │      └── get_merchant_mapping_stats()       [NEW]                       │
 │                                                                         │
 │ 🎨 USER INTERFACE                                                       │
@@ -50,12 +49,11 @@
 │    • Calculate confidence                                               │
 │        ↓                                                                 │
 │    [SUGGEST RULES]                                                      │
-│    • Merchant appears 3+ times                                          │
+│    • Merchant appears 2+ times                                          │
 │    • 75%+ in same category                                              │
 │        ↓                                                                 │
 │    [APPLY/LEARN]                                                        │
 │    • Store in merchant_mappings table                                   │
-│    • Track usage                                                        │
 │        ↓                                                                 │
 │    Future Transactions ✅ AUTO-CATEGORIZED                              │
 │                                                                         │
@@ -68,7 +66,7 @@
 │  ✅ One-Click Automation       Apply all suggestions at once             │
 │  ✅ Manual Control             Create custom rules anytime               │
 │  ✅ Rule Management            View, edit, delete rules easily           │
-│  ✅ Progress Tracking          See metrics on dashboard                  │
+│  ✅ Progress Metrics           See metrics on Merchant Rules page        │
 │  ✅ No Setup Required          Works with existing data                  │
 │  ✅ Configurable               Adjust learning thresholds                │
 │  ✅ Local & Private            All data stays on your machine            │
@@ -105,7 +103,7 @@
 │                                                                         │
 │  SYSTEM LEARNS:                                                          │
 │  Merchant: JOLLIBEE                                                     │
-│  Pattern: 3 transactions, 100% in Food & Dining                          │
+│  Pattern: 2 transactions, 100% in Food & Dining                          │
 │  Confidence: 100% ✅ Ready to automate                                   │
 │                                                                         │
 │  AFTER:                                                                  │
@@ -119,8 +117,8 @@
 
 ┌─ CONFIGURATION ───────────────────────────────────────────────────────────┐
 │                                                                           │
-│  Current Defaults (Conservative - High Accuracy):                        │
-│  • Minimum Frequency: 3 transactions                                     │
+│  Current Defaults (Balanced):                                           │
+│  • Minimum Frequency: 2 transactions                                     │
 │  • Confidence Threshold: 75%                                             │
 │                                                                         │
 │  Customization Options:                                                 │
@@ -128,7 +126,7 @@
 │  │ min_frequency=5, confidence_threshold=0.90                           │
 │  │                                                                      │
 │  ├─ Balanced (Current Default)                                          │
-│  │ min_frequency=3, confidence_threshold=0.75                           │
+│  │ min_frequency=2, confidence_threshold=0.75                           │
 │  │                                                                      │
 │  └─ Aggressive (More Suggestions, Less Strict)                          │
 │    min_frequency=2, confidence_threshold=0.60                           │
@@ -145,7 +143,6 @@
 │  • Pending Suggestions                                                   │
 │  • Rule Coverage %                                                       │
 │  • Rules by Category                                                     │
-│  • Last Used Timestamps                                                  │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 
@@ -160,7 +157,7 @@
 │                                                                         │
 │  Enhanced:                                                               │
 │  🔧 utils/categorizer.py                 +50 lines     Batch processing │
-│  🔧 utils/database.py                    +50 lines     Tracking funcs   │
+│  🔧 utils/database.py                    +50 lines     Stats helpers    │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 

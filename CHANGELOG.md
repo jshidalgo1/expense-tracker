@@ -1,5 +1,14 @@
 # Changelog: Merchant Auto-Categorization Implementation
 
+## Version 1.0.1 - February 9, 2026
+
+### Changed
+- Documentation aligned with current upload flow (auto-detected parsing, preview/edit step, danger zone).
+- Merchant Rules docs updated to reflect `min_frequency=2` default thresholds.
+- Removed documentation claims about rule usage tracking and automatic DB backups.
+
+---
+
 ## Version 1.0.0 - February 8, 2026
 
 ### Added
@@ -29,7 +38,6 @@
 
 #### Database Enhancements
 - **`utils/database.py`** (ENHANCED)
-  - `update_merchant_mapping_usage()` - Track when merchant rules are used
   - `get_merchant_mapping_stats()` - Get statistics about merchant mappings
 
 #### Documentation
@@ -48,7 +56,7 @@
 
 ✅ **Smart Suggestions**
 - Only suggests rules with high confidence (75%+)
-- Requires minimum frequency (3+ transactions)
+- Requires minimum frequency (2+ transactions)
 - Shows merchant, category, frequency, and confidence level
 
 ✅ **One-Click Automation**
@@ -63,7 +71,6 @@
 
 ✅ **Rule Management**
 - View all existing rules with timestamps
-- See last used dates for each rule
 - Track rules by category
 - Comprehensive statistics dashboard
 
@@ -112,19 +119,18 @@
 
 #### Database Integration
 - Uses existing `merchant_mappings` table
-- Tracks `created_at` timestamp
-- Tracks `last_used` timestamp
+- Stores `created_at` and `last_used` columns
 - UNIQUE constraint on merchant_pattern
 
 ### Configuration
 
-**Default Settings (Conservative)**
-- Minimum Frequency: 3 transactions
+**Default Settings (Balanced)**
+- Minimum Frequency: 2 transactions
 - Confidence Threshold: 75%
 
 **Available Presets**
 - **Conservative**: min_frequency=5, confidence_threshold=0.90
-- **Balanced**: min_frequency=3, confidence_threshold=0.75 (default)
+- **Balanced**: min_frequency=2, confidence_threshold=0.75 (default)
 - **Aggressive**: min_frequency=2, confidence_threshold=0.60
 
 ### Usage Examples
@@ -152,7 +158,7 @@ print(f"Added {result['added']} new rules")
 | File | Changes | Lines |
 |------|---------|-------|
 | `utils/categorizer.py` | Added batch processing functions | +50 |
-| `utils/database.py` | Added tracking functions | +50 |
+| `utils/database.py` | Added merchant stats helpers | +50 |
 
 ### Files Created
 
@@ -200,7 +206,7 @@ All components tested and verified:
 ### Known Limitations
 
 - Merchant patterns are case-insensitive
-- Suggestions require minimum 3 transactions per merchant
+- Suggestions require minimum 2 transactions per merchant
 - Confidence calculated per category (not time-weighted)
 - No machine learning or NLP beyond basic pattern matching
 

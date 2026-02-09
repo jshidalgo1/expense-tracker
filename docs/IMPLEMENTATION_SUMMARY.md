@@ -20,7 +20,7 @@ Your expense tracker now has a **fully functional merchant auto-categorization s
 
 **Algorithm:**
 1. Groups transactions by extracted merchant name
-2. Identifies merchants with 3+ transactions in same category
+2. Identifies merchants with 2+ transactions in same category
 3. Calculates confidence (% of transactions in target category)
 4. Suggests rules with 75%+ confidence
 5. Creates merchant mappings in database
@@ -46,7 +46,6 @@ Your expense tracker now has a **fully functional merchant auto-categorization s
 **File:** `utils/database.py` (Updated)
 
 **New Functions:**
-- `update_merchant_mapping_usage()` - Track when rules are used
 - `get_merchant_mapping_stats()` - Statistics on merchant mappings
 
 **Existing Table Used:**
@@ -62,7 +61,8 @@ Your expense tracker now has a **fully functional merchant auto-categorization s
 - 💡 Suggested merchant rules based on transaction history
 - ✅ One-click application of all suggestions
 - ➕ Manual rule creation interface
-- 📋 View all existing rules with usage stats
+- 📋 View all existing rules
+- 🧹 Review uncategorized transactions and bulk-update categories
 - 🗑️ Delete rules you no longer need
 - ℹ️ Built-in help and how-to documentation
 
@@ -144,7 +144,7 @@ Your future transaction:
 ## ⚙️ Configuration
 
 ### Default Settings
-- **Minimum Frequency:** 3 transactions
+- **Minimum Frequency:** 2 transactions
 - **Confidence Threshold:** 75%
 
 ### Customization
@@ -155,7 +155,7 @@ Edit `pages/5_Merchant_Rules.py` line ~60:
 suggestions = suggest_merchant_mappings(min_frequency=5, confidence_threshold=0.90)
 
 # Balanced (current default)
-suggestions = suggest_merchant_mappings(min_frequency=3, confidence_threshold=0.75)
+suggestions = suggest_merchant_mappings(min_frequency=2, confidence_threshold=0.75)
 
 # Aggressive (more suggestions, potentially less accurate)
 suggestions = suggest_merchant_mappings(min_frequency=2, confidence_threshold=0.60)
@@ -203,9 +203,8 @@ The system tracks:
 - Number of active merchant rules
 - Rule coverage percentage
 - Rules by category breakdown
-- Last used timestamp for each rule
 
-View these via the dashboard or programmatically:
+View these via the Merchant Rules page or programmatically:
 ```python
 from utils.merchant_learner import get_learning_stats
 
@@ -278,7 +277,7 @@ print(f"Active Rules: {stats['merchant_mappings']}")
 
 ### Modified Files
 - ✅ `utils/categorizer.py` - Added batch processing
-- ✅ `utils/database.py` - Added tracking functions
+- ✅ `utils/database.py` - Added merchant stats helpers
 
 ### No Breaking Changes
 - All existing functionality preserved
@@ -294,7 +293,7 @@ print(f"Active Rules: {stats['merchant_mappings']}")
 3. **One-Click Automation** - Apply all suggestions at once
 4. **Manual Control** - Create custom rules anytime
 5. **Rule Management** - View, edit, delete rules easily
-6. **Progress Tracking** - See learning metrics on dashboard
+6. **Progress Metrics** - See learning metrics on Merchant Rules page
 7. **No Setup Required** - Works with existing data
 8. **Configurable** - Adjust learning thresholds to your preference
 
@@ -314,7 +313,7 @@ The system becomes smarter over time:
 
 | Issue | Solution |
 |-------|----------|
-| No suggestions | Add more transactions (need 3+ same merchant in same category) |
+| No suggestions | Add more transactions (need 2+ same merchant in same category) |
 | Rules not matching | Verify merchant name appears in transaction description |
 | Too aggressive | Increase `min_frequency` or `confidence_threshold` |
 | Not aggressive enough | Decrease thresholds for more suggestions |
@@ -336,7 +335,7 @@ The system becomes smarter over time:
 3. **Review:** Suggested merchant mappings
 4. **Apply:** Click "Apply All Suggestions"
 5. **Add transactions:** System will auto-categorize matching merchants
-6. **Monitor:** Check dashboard for learning progress
+6. **Monitor:** Check Merchant Rules page for learning progress
 
 ---
 

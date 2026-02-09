@@ -22,9 +22,8 @@ New helper functions added:
 - `get_categorization_confidence_breakdown()` - Debug categorization decisions
 
 ### 3. **Database Enhancements** (`utils/database.py`)
-New functions for tracking merchant mappings:
+New function for merchant mapping insights:
 
-- `update_merchant_mapping_usage()` - Tracks when rules are used
 - `get_merchant_mapping_stats()` - Statistics about your rules
 
 ### 4. **Merchant Rules Management Page** (`pages/5_Merchant_Rules.py`)
@@ -34,6 +33,7 @@ New UI for managing automation:
 - 💡 Suggested merchant rules based on history
 - ➕ Create custom merchant rules
 - 📋 View and manage all existing rules
+- 🧹 Review uncategorized transactions and bulk-update categories
 - 🗑️ Delete rules you no longer need
 
 ## How It Works
@@ -44,8 +44,8 @@ New UI for managing automation:
 2. **Groups** transactions by extracted merchant name
 3. **Checks** if a merchant consistently appears in one category
 4. **Suggests** a rule if:
-   - Merchant appears 3+ times (configurable)
-   - 75%+ of transactions are in the same category (configurable)
+    - Merchant appears 2+ times (configurable)
+    - 75%+ of transactions are in the same category (configurable)
 5. **Creates** the merchant mapping in the database
 
 ### Auto-Categorization Priority
@@ -78,17 +78,21 @@ For merchants not yet in suggestions:
 3. Click "Add Rule"
 
 #### Step 3: Manage Existing Rules
-- View all active rules with creation and usage timestamps
+- View all active rules with creation timestamps
 - Delete rules you no longer need
+
+#### Step 4: Triage Uncategorized Transactions
+- Review uncategorized transactions in a dedicated table
+- Apply a category in bulk for faster cleanup
 
 ## Configuration
 
 ### Tuning Suggestions
 
-The learning algorithm is configured conservatively to ensure accuracy:
+The learning algorithm is configured for balanced accuracy and coverage:
 
 **Current Settings:**
-- Minimum frequency: 3 transactions
+- Minimum frequency: 2 transactions
 - Confidence threshold: 75% (or higher)
 
 **To adjust these**, modify the function calls in `pages/5_Merchant_Rules.py`:
@@ -103,7 +107,7 @@ suggestions = suggest_merchant_mappings(
 
 **Recommended values:**
 - Conservative: `min_frequency=5, confidence_threshold=0.9`
-- Moderate: `min_frequency=3, confidence_threshold=0.75` (current)
+- Moderate: `min_frequency=2, confidence_threshold=0.75` (current)
 - Aggressive: `min_frequency=2, confidence_threshold=0.6`
 
 ## Usage Examples
@@ -189,7 +193,7 @@ print(f"Auto-categorized {updated} previously uncategorized transactions")
 
 ### "No new merchant patterns found yet"
 **Cause:** Not enough transaction history
-**Solution:** Keep adding transactions. System needs at least 3 of the same merchant in one category to suggest a rule.
+**Solution:** Keep adding transactions. System needs at least 2 of the same merchant in one category to suggest a rule.
 
 ### Rules aren't being applied
 **Cause:** Merchant patterns might not match transaction descriptions exactly

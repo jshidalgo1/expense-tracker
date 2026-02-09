@@ -10,7 +10,7 @@ A mobile-friendly, password-protected personal expense tracking application buil
 
 - 🔐 **Secure Authentication** - Password-protected with bcrypt hashing using YAML configuration
 - ✍️ **Manual Entry** - Quick expense input with smart category suggestions based on merchant names
-- 📄 **PDF Upload** - Extract transactions from password-protected bank statements (BPI, UnionBank, generic formats)
+- 📄 **PDF Upload** - Extract transactions from password-protected bank statements (BPI, UnionBank, auto-detected formats)
 - 📸 **OCR Support** - Automatic optical character recognition for scanned/image-based PDFs
 - 🏦 **Bank Password Management** - Save and manage bank passwords for quick future uploads
 - 🤖 **Smart Auto-Categorization** - Intelligent categorization using fuzzy matching and keyword recognition
@@ -19,7 +19,7 @@ A mobile-friendly, password-protected personal expense tracking application buil
 - 📱 **Mobile-Friendly** - Responsive design optimized for all device sizes
 - 💾 **Local Storage** - All data stored securely in SQLite (no cloud dependencies)
 - 🆓 **100% Free & Open Source** - No paid services or external APIs required
-- 🔄 **Merchant Mapping** - Link similar merchants to consistent categories for better organization
+- 🏪 **Merchant Rules** - Link merchant patterns to categories for consistent auto-categorization
 - 📈 **Bulk Operations** - Update multiple transactions at once for efficiency
 
 ## 🚀 Quick Start
@@ -100,21 +100,24 @@ To update credentials:
 ### 📄 Uploading Bank Statements
 
 1. Navigate to **Upload Statements** page
-2. Select your bank from the dropdown or choose generic format
+2. Select your bank from the dropdown (used for password storage only)
 3. Choose account type (if applicable)
 4. Enter PDF password (auto-filled if previously saved)
 5. Upload one or more PDF files
 6. Click **Process Statements**
+7. Review the **Preview & Edit Transactions** table and apply any fixes
+8. Click **Save Transactions**
 
 **Supported Banks**:
 - BPI (Bank of the Philippine Islands) - with specific transaction table parsing
 - UnionBank - with specific transaction table parsing
-- Generic format - automatic detection and text extraction
+- Other formats - automatic detection and text extraction
 
 **Bank Password Management**:
 - Check "Save password" to securely store it for future uploads
 - View and delete saved passwords in the password management section
 - Each bank password is stored separately for security
+- Bank selection is only used for password storage; parsing uses auto-detection
 
 **PDF Processing Features**:
 - Extracts transaction date, description, and amount automatically
@@ -123,6 +126,13 @@ To update credentials:
 - **Automatic OCR** - Detects image-based PDFs and uses Tesseract OCR for text extraction
 - Intelligent page processing (reverse order to find transactions quickly)
 - Batch processing for multiple statements
+
+**Preview & Edit**:
+- Review extracted transactions before saving
+- Fix dates, descriptions, amounts, and categories in bulk
+
+**Danger Zone**:
+- **Clear All Transactions** removes all transactions from the database (use with care)
 
 ### 📊 Viewing Dashboard
 
@@ -141,7 +151,6 @@ To update credentials:
    - **Quick Stats** - Total transactions, total spending, unique categories
    - **Export Data** - Download transaction data as CSV
    - **Edit Categories** - Update transaction categories directly from dashboard
-   - **Merchant Mapping** - Map similar merchants to consistent categories
 
 ### 🏷️ Managing Categories
 
@@ -161,6 +170,14 @@ To update credentials:
    - View how many transactions are in each category
    - See total amount spent in each category
    - Track category growth over time
+
+### 🏪 Managing Merchant Rules
+
+1. Navigate to **Merchant Rules** page
+2. **Review suggestions** generated from your history
+3. **Apply all suggestions** or create a **custom rule**
+4. **Manage existing rules** (view and delete)
+5. **Triage uncategorized** transactions with bulk updates
 
 ## 🔒 Security & Privacy
 
@@ -227,11 +244,13 @@ expense-tracker/
 │   ├── 1_Add_Expense.py       # Manual expense entry with category suggestions
 │   ├── 2_Upload_Statements.py # PDF upload and bank statement processing
 │   ├── 3_Dashboard.py         # Analytics, visualizations, and data export
-│   └── 4_Categories.py        # Category management and statistics
+│   ├── 4_Categories.py        # Category management and statistics
+│   └── 5_Merchant_Rules.py    # Merchant rules, suggestions, and bulk actions
 ├── utils/
 │   ├── database.py            # SQLite operations & schema management
 │   ├── pdf_parser.py          # PDF text extraction & password handling
-│   └── categorizer.py         # Smart categorization with fuzzy matching
+│   ├── categorizer.py         # Smart categorization with fuzzy matching
+│   └── merchant_learner.py    # Merchant rule suggestions and stats
 ├── data/
 │   ├── uploads/                # Uploaded PDF file storage (local only)
 │   └── expenses.db             # SQLite database (created on first run, .gitignored)
@@ -283,9 +302,8 @@ expense-tracker/
 
 **Problem**: "Could not extract any transactions"
 - **Solution**: The PDF format may not be recognized. Try:
-  - Selecting "Generic" format for automatic parsing
-  - Manually checking if the PDF format matches known bank layouts
-  - Contact your bank for a text-based statement version
+   - Manually checking if the PDF format matches known bank layouts
+   - Contact your bank for a text-based statement version
 
 **Problem**: "File too large or processing timeout"
 - **Solution**: Upload PDFs in smaller batches. Process one or two months at a time instead of entire year.
@@ -314,9 +332,8 @@ expense-tracker/
 **Problem**: "Database corrupted" or unable to open database
 - **Solution**: 
    - Backup your current `data/expenses.db`
-   - A backup file (`data/expenses.db.bak_*`) is created automatically
    - Delete corrupted `data/expenses.db` to start fresh
-  - Restore from backup if needed
+  - Restore from your backup if needed
 
 ### Display Issues
 
@@ -372,14 +389,12 @@ git push -u origin main
 
 ### Backup Strategy
 
-- **Automatic Backups**: The app automatically creates dated backups (`data/expenses.db.bak_*`)
 - **Manual Backups**: Copy `data/expenses.db` to a safe location regularly
 - **Export Data**: Use Dashboard → Export Data to save transactions as CSV for external backup
 
 ### Database Maintenance
 
 - **File Size**: Database grows with transaction count (typically <5MB for 10,000 transactions)
-- **Optimization**: Database is automatically optimized on startup
 - **Cleanup**: Use Categories page to delete unused categories and archive old data if needed
 
 ## 🤝 Contributing
