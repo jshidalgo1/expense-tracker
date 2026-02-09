@@ -61,6 +61,7 @@ if authentication_status:
         - **Upload Statements**: PDF import
         - **Dashboard**: View analytics
         - **Categories**: Manage categories
+        - **Finance Log**: Track overall net worth
         - **Goals**: Monthly budgets and limits
         """)
     
@@ -80,6 +81,9 @@ if authentication_status:
     
     ### 📊 Analytics
     View your spending patterns and insights in the **Dashboard**.
+
+    ### 💼 Finance Log
+    Log total assets and debt each cutoff to see net worth over time.
     
     ### 🎯 Goals
     Set monthly budgets per category and track your progress.

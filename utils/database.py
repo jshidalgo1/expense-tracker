@@ -88,6 +88,30 @@ def init_db():
             UNIQUE (month, category)
         )
     """)
+
+    # Create finance_logs table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS finance_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            log_date TEXT NOT NULL,
+            total_assets REAL NOT NULL,
+            total_debt REAL NOT NULL,
+            net_worth REAL NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Create finance_log_items table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS finance_log_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            log_id INTEGER NOT NULL,
+            item_type TEXT NOT NULL,
+            name TEXT NOT NULL,
+            amount REAL NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     
     conn.commit()
     conn.close()
@@ -390,6 +414,102 @@ def delete_bank_password(bank_name: str) -> bool:
     conn.close()
     
     return deleted
+
+# ============= FINANCE LOG OPERATIONS =============
+
+def add_finance_log(log_date: str, total_assets: float, total_debt: float) -> int:
+    """Add a finance log snapshot and return its ID."""
+    net_worth = total_assets - total_debt
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO finance_logs (log_date, total_assets, total_debt, net_worth)
+        VALUES (?, ?, ?, ?)
+    """, (log_date, total_assets, total_debt, net_worth))
+
+    log_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return log_id
+
+def add_finance_log_with_items(
+    log_date: str,
+    total_assets: float,
+    total_debt: float,
+    asset_items: List[Tuple[str, float]],
+    debt_items: List[Tuple[str, float]]
+) -> int:
+    """Add a finance log and its breakdown items in a single transaction."""
+    net_worth = total_assets - total_debt
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO finance_logs (log_date, total_assets, total_debt, net_worth)
+        VALUES (?, ?, ?, ?)
+    """, (log_date, total_assets, total_debt, net_worth))
+
+    log_id = cursor.lastrowid
+
+    if asset_items:
+        cursor.executemany(
+            """
+            INSERT INTO finance_log_items (log_id, item_type, name, amount)
+            VALUES (?, 'asset', ?, ?)
+            """,
+            [(log_id, name, amount) for name, amount in asset_items]
+        )
+
+    if debt_items:
+        cursor.executemany(
+            """
+            INSERT INTO finance_log_items (log_id, item_type, name, amount)
+            VALUES (?, 'debt', ?, ?)
+            """,
+            [(log_id, name, amount) for name, amount in debt_items]
+        )
+
+    conn.commit()
+    conn.close()
+    return log_id
+
+def get_finance_logs() -> List[Dict]:
+    """Get all finance logs ordered by date ascending."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, log_date, total_assets, total_debt, net_worth, created_at
+        FROM finance_logs
+        ORDER BY log_date ASC, id ASC
+    """)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
+
+def get_finance_log_items(log_ids: List[int]) -> List[Dict]:
+    """Get all finance log items for the given log IDs."""
+    if not log_ids:
+        return []
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    placeholders = ','.join('?' * len(log_ids))
+    cursor.execute(f"""
+        SELECT id, log_id, item_type, name, amount
+        FROM finance_log_items
+        WHERE log_id IN ({placeholders})
+        ORDER BY log_id ASC, item_type ASC, name ASC
+    """, log_ids)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
 
 def update_transaction_category(transaction_id: int, new_category: str) -> bool:
     """Update a transaction's category."""
