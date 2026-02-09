@@ -1,10 +1,13 @@
 import streamlit as st
 from utils.auth import get_authenticator
 import pandas as pd
-import plotly.express as px
 from datetime import datetime, timedelta, date
-from utils.database import get_transactions, get_date_range, get_budget_targets
-from utils.merchant_learner import get_learning_stats
+from utils.database import (
+    get_transactions,
+    get_date_range,
+    get_budget_targets,
+    get_finance_logs
+)
 
 # Page configuration
 st.set_page_config(
@@ -103,64 +106,6 @@ with col4:
 
 st.divider()
 
-# Breakdowns
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("📈 Spending by Category")
-    category_spending = df.groupby('category')['amount'].sum().sort_values(ascending=False)
-
-    fig_category = px.pie(
-        values=category_spending.values,
-        names=category_spending.index,
-        title="",
-        hole=0.4
-    )
-    fig_category.update_traces(
-        textposition='inside',
-        textinfo='percent+label',
-        hovertemplate='<b>%{label}</b><br>₱%{value:,.2f}<br>%{percent}<extra></extra>'
-    )
-    fig_category.update_layout(showlegend=True, height=360)
-    st.plotly_chart(fig_category, width="stretch")
-
-with col2:
-    st.subheader("💳 Spending by Account")
-    account_spending = df.groupby('account')['amount'].sum().sort_values(ascending=False)
-
-    fig_account = px.bar(
-        x=account_spending.index,
-        y=account_spending.values,
-        title="",
-        labels={'x': 'Account', 'y': 'Amount (₱)'},
-        color=account_spending.values,
-        color_continuous_scale='Blues'
-    )
-    fig_account.update_traces(
-        hovertemplate='<b>%{x}</b><br>₱%{y:,.2f}<extra></extra>'
-    )
-    fig_account.update_layout(
-        showlegend=False,
-        height=360,
-        xaxis_title="Account Type",
-        yaxis_title="Amount (₱)"
-    )
-    st.plotly_chart(fig_account, width="stretch")
-
-st.divider()
-
-# Top expenses
-st.subheader("🔝 Top Expenses")
-
-top_expenses = df.nlargest(10, 'amount')[['date', 'description', 'category', 'amount']]
-top_expenses['date'] = top_expenses['date'].dt.strftime('%Y-%m-%d')
-top_expenses['amount'] = top_expenses['amount'].apply(lambda x: f"₱{x:,.2f}")
-top_expenses.columns = ['Date', 'Description', 'Category', 'Amount']
-
-st.dataframe(top_expenses, width="stretch", hide_index=True)
-
-st.divider()
-
 # Budget status (current month)
 st.subheader("🎯 Budget Status (Current Month)")
 
@@ -207,23 +152,32 @@ if overall_budget > 0:
 else:
     st.info("Set an overall budget in Goals to track monthly limits.")
 
-# Categorization health
+# Finance summary
 st.divider()
 
-st.subheader("🏷️ Categorization Health")
+st.subheader("💼 Finance Summary")
 
-stats = get_learning_stats()
+logs = get_finance_logs()
 
-col1, col2, col3, col4 = st.columns(4)
+if not logs:
+    st.info("No finance logs yet. Add a log in Finance Log to see your net worth summary here.")
+else:
+    latest = logs[-1]
+    previous = logs[-2] if len(logs) > 1 else None
+    delta_net_worth = None
+    if previous:
+        delta_net_worth = latest['net_worth'] - previous['net_worth']
 
-with col1:
-    st.metric("Total Transactions", stats['total_transactions'])
+    col1, col2, col3 = st.columns(3)
 
-with col2:
-    st.metric("Uncategorized", stats['uncategorized'])
+    with col1:
+        st.metric("Total Assets", f"₱{latest['total_assets']:,.2f}")
 
-with col3:
-    st.metric("Pending Suggestions", stats['pending_suggestions'])
+    with col2:
+        st.metric("Total Debt", f"₱{latest['total_debt']:,.2f}")
 
-with col4:
-    st.metric("Rule Coverage", f"{stats['coverage_percentage']:.1f}%")
+    with col3:
+        delta_label = f"₱{delta_net_worth:,.2f}" if delta_net_worth is not None else None
+        st.metric("Net Worth", f"₱{latest['net_worth']:,.2f}", delta_label)
+
+    st.caption(f"Latest log: {latest['log_date']}")
