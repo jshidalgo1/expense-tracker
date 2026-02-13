@@ -17,8 +17,8 @@ A mobile-friendly, password-protected personal expense tracking application buil
 - 📊 **Interactive Dashboard** - Visualize spending patterns with Plotly charts and analytics
 - 🏷️ **Category Management** - Create, edit, organize, and delete expense categories
 - 📱 **Mobile-Friendly** - Responsive design optimized for all device sizes
-- 💾 **Local Storage** - All data stored securely in SQLite (no cloud dependencies)
-- 🆓 **100% Free & Open Source** - No paid services or external APIs required
+- ☁️ **Cloud Storage** - Data stored securely in Supabase PostgreSQL
+- 🆓 **100% Free & Open Source** - Designed for free tier Supabase hosting
 - 🏪 **Merchant Rules** - Link merchant patterns to categories for consistent auto-categorization
 - 📈 **Bulk Operations** - Update multiple transactions at once for efficiency
 
@@ -28,6 +28,7 @@ A mobile-friendly, password-protected personal expense tracking application buil
 
 - Python 3.10 or higher
 - pip package manager
+- **Supabase Account** (Free Tier is sufficient)
 - Git (optional, for cloning)
 
 ### Installation
@@ -51,27 +52,9 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. **Run the application**
+4. **Configure Secrets**
 
-```bash
-streamlit run app.py
-```
-
-The app will open in your browser at `http://localhost:8501`
-
-### Authentication
-
-The application uses Streamlit secrets for authentication:
-
-- **Secrets File**: `.streamlit/secrets.toml` - Contains user credentials and session settings
-- **Credentials**: Default username and password are configured in `.streamlit/secrets.toml`
-- **Password Hashing**: Passwords are hashed using bcrypt for security
-
-To update credentials:
-1. Edit `.streamlit/secrets.toml` with new username/password
-2. The application will use the updated credentials on next login
-
-Example `.streamlit/secrets.toml`:
+You must create a `.streamlit/secrets.toml` file with your credentials and database connection details.
 
 ```toml
 [cookie]
@@ -83,7 +66,24 @@ name = "expense_tracker_cookie"
 email = "jsmith@gmail.com"
 name = "John Smith"
 password = "$2b$12$VeDlrIbQ/wFkyadrM0QPyuVnbUx7X8DCcdG//zmKWsgqrRLlsyvsi"
+
+[postgres]
+host = "aws-0-[region].pooler.supabase.com"
+port = 6543
+dbname = "postgres"
+user = "postgres.[your-project-ref]"
+password = "[YOUR-DB-PASSWORD]"
 ```
+
+**Note**: Use the **Transaction Pooler** connection settings from Supabase (Port 6543) for best compatibility with IPv4 networks.
+
+5. **Run the application**
+
+```bash
+streamlit run app.py
+```
+
+The app will open in your browser at `http://localhost:8501`. The database schema will be created automatically on first run.
 
 ## 📖 User Guide
 
@@ -198,15 +198,14 @@ password = "$2b$12$VeDlrIbQ/wFkyadrM0QPyuVnbUx7X8DCcdG//zmKWsgqrRLlsyvsi"
 
 - ✅ Passwords hashed with bcrypt algorithm
 - ✅ Session-based authentication with configurable expiry
-- ✅ Local SQLite storage (zero cloud dependencies)
-- ✅ PDF passwords stored locally only
+- ✅ Cloud PostgreSQL storage (Supabase)
+- ✅ PDF passwords stored locally only (or in DB if implemented)
 - ✅ No external API calls or third-party trackers
 - ✅ Sensitive files excluded from git version control
 - ✅ Secrets-based configuration (easy to customize)
 - ✅ No telemetry or data collection
 
 **Files excluded from version control** (via `.gitignore`):
-- `data/expenses.db` - Your complete transaction database
 - `.streamlit/` - Local configuration files
 - Virtual environment files
 

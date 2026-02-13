@@ -1,4 +1,3 @@
-import sqlite3
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
 import os
@@ -8,49 +7,38 @@ try:
     import psycopg2
     from psycopg2.extras import RealDictCursor
 except ImportError:
-    psycopg2 = None
+    st.error("psycopg2 is not installed. Please add psycopg2-binary to requirements.txt")
+    st.stop()
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
-DB_PATH = os.path.join(DATA_DIR, "expenses.db")
 OVERALL_BUDGET_CATEGORY = "__overall__"
 
-def get_db_type():
-    """Return 'postgres' if configured, else 'sqlite'."""
-    if "postgres" in st.secrets:
-        return "postgres"
-    return "sqlite"
-
 def get_connection():
-    """Create a database connection (SQLite or Postgres)."""
-    if get_db_type() == "postgres":
-        if psycopg2 is None:
-            st.error("psycopg2 is not installed. Please add psycopg2-binary to requirements.txt")
-            st.stop()
+    """Create a database connection (Postgres only)."""
+    if "postgres" not in st.secrets:
+        st.error("Missing 'postgres' section in .streamlit/secrets.toml")
+        st.stop()
         
-        try:
-            secrets = st.secrets["postgres"]
-            conn = psycopg2.connect(
-                host=secrets["host"],
-                port=secrets["port"],
-                dbname=secrets["dbname"],
-                user=secrets["user"],
-                password=secrets["password"],
-                cursor_factory=RealDictCursor
-            )
-            return conn
-        except Exception as e:
-            st.error(f"Failed to connect to PostgreSQL: {e}")
-            st.stop()
-    else:
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
+    try:
+        secrets = st.secrets["postgres"]
+        conn = psycopg2.connect(
+            host=secrets["host"],
+            port=secrets["port"],
+            dbname=secrets["dbname"],
+            user=secrets["user"],
+            password=secrets["password"],
+            cursor_factory=RealDictCursor
+        )
         return conn
+    except Exception as e:
+        st.error(f"Failed to connect to PostgreSQL: {e}")
+        st.stop()
 
 def get_placeholder():
-    """Return the query placeholder based on DB type."""
-    return "%s" if get_db_type() == "postgres" else "?"
+    """Return the query placeholder for Postgres."""
+    return "%s"
 
 def execute_query(query: str, params: tuple = ()) -> bool:
     """Execute a query that doesn't return results (INSERT, UPDATE, DELETE)."""
@@ -70,15 +58,9 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Determine SQL syntax based on DB type
-    db_type = get_db_type()
-    
-    if db_type == "postgres":
-        pk_def = "SERIAL PRIMARY KEY"
-        text_type = "TEXT"
-    else:
-        pk_def = "INTEGER PRIMARY KEY AUTOINCREMENT"
-        text_type = "TEXT"
+    # Postgres syntax
+    pk_def = "SERIAL PRIMARY KEY"
+    text_type = "TEXT"
 
     # Create transactions table
     cursor.execute(f"""
@@ -174,7 +156,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-
 # Ensure schema exists on import (safe with IF NOT EXISTS)
 init_db()
 
@@ -188,19 +169,12 @@ def add_transaction(date: str, description: str, category: str,
     
     ph = get_placeholder()
     
-    if get_db_type() == "postgres":
-        cursor.execute(f"""
-            INSERT INTO transactions (date, description, category, amount, account, source)
-            VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph})
-            RETURNING id
-        """, (date, description, category, amount, account, source))
-        transaction_id = cursor.fetchone()[0]
-    else:
-        cursor.execute(f"""
-            INSERT INTO transactions (date, description, category, amount, account, source)
-            VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph})
-        """, (date, description, category, amount, account, source))
-        transaction_id = cursor.lastrowid
+    cursor.execute(f"""
+        INSERT INTO transactions (date, description, category, amount, account, source)
+        VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph})
+        RETURNING id
+    """, (date, description, category, amount, account, source))
+    transaction_id = cursor.fetchone()['id']
     
     conn.commit()
     conn.close()
@@ -241,13 +215,8 @@ def get_transactions(date_from: Optional[str] = None,
     
     cursor.execute(query, tuple(params))
     
-    if get_db_type() == "postgres":
-        # extras.RealDictCursor returns dict-like objects
-        rows = cursor.fetchall()
-        result = [dict(row) for row in rows]
-    else:
-        rows = cursor.fetchall()
-        result = [dict(row) for row in rows]
+    rows = cursor.fetchall()
+    result = [dict(row) for row in rows]
         
     conn.close()
     
@@ -301,22 +270,14 @@ def get_date_range() -> Tuple[Optional[str], Optional[str]]:
     conn = get_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT MIN(date), MAX(date) FROM transactions")
+    # Use aliases for safe dict access
+    cursor.execute("SELECT MIN(date) as min_date, MAX(date) as max_date FROM transactions")
     row = cursor.fetchone()
     conn.close()
     
-    # row can be tuple (sqlite) or dict (postgres/RealDictCursor) if configured that way
-    # but psycopg2 default cursor returns tuple. We used default cursor for simple queries?
-    # Actually wait, we didn't set cursor factory for postgres in get_connection yet, let's assume default tuple for now unless RealDictCursor is used.
-    # In get_connection I used: conn = psycopg2.connect(...) -> default cursor (tuple)
-    # Wait, I imported RealDictCursor but didn't use it in get_connection for Postgres.
-    # Let me fix that assumption. Standardizing on dict access is safer if we want to be consistent.
-    # For now, let's treat row as indexable or dict depending on context.
-    # Actually, SQLite Row factory supports both. Psycopg2 default doesn't.
-    # Better to use RealDictCursor for Postgres to match SQLite Row behavior (access by name).
-    
     if row:
-        return row[0], row[1]
+        return row['min_date'], row['max_date']
+             
     return None, None
 
 def get_transaction_months() -> List[str]:
@@ -328,12 +289,7 @@ def get_transaction_months() -> List[str]:
     rows = cursor.fetchall()
     conn.close()
 
-    # SQLite Row and Psycopg2 tuple might differ. 
-    # If I don't use RealDictCursor for Postgres, I can't do row['month'].
-    # I should probably update get_connection to use RealDictCursor for Postgres.
-    # I'll update this function to handle both or assume I'll fix get_connection.
-    # For now, index access is safer for single column.
-    return [row[0] for row in rows]
+    return [row['month'] for row in rows]
 
 # ============= CATEGORY OPERATIONS =============
 
@@ -361,7 +317,7 @@ def get_categories() -> List[str]:
     rows = cursor.fetchall()
     conn.close()
     
-    return [row[0] for row in rows]
+    return [row['name'] for row in rows]
 
 def update_category(old_name: str, new_name: str) -> bool:
     """Update a category name."""
@@ -393,14 +349,7 @@ def delete_category(name: str) -> Tuple[bool, str]:
     # Check if category is used
     cursor.execute(f"SELECT COUNT(*) as count FROM transactions WHERE category = {ph}", (name,))
     
-    # Handle different cursor returns
-    row = cursor.fetchone()
-    if get_db_type() == "postgres":
-        # default cursor is tuple
-        count = row[0]
-    else:
-        # sqlite Row is dict-like
-        count = row['count']
+    count = cursor.fetchone()['count']
         
     if count > 0:
         conn.close()
@@ -424,11 +373,6 @@ def upsert_budget_target(month: str, category: Optional[str], amount: float) -> 
     category_value = category if category is not None else OVERALL_BUDGET_CATEGORY
     
     ph = get_placeholder()
-    
-    # Postgres uses ON CONFLICT differently? No, standard syntax for UPSERT is similar but let's check.
-    # SQLite: INSERT INTO ... ON CONFLICT(cols) DO UPDATE SET ...
-    # Postgres: INSERT INTO ... ON CONFLICT(cols) DO UPDATE SET ...
-    # They are compatible for this simple case.
     
     return execute_query(
         f"""
@@ -462,13 +406,8 @@ def get_budget_targets(month: str) -> Dict[Optional[str], float]:
 
     targets: Dict[Optional[str], float] = {}
     for row in rows:
-        # Handle tuple vs dict access
-        if isinstance(row, tuple): # Postgres default
-            category = row[0]
-            amount = row[1]
-        else: # SQLite
-            category = row['category']
-            amount = row['amount']
+        category = row['category']
+        amount = row['amount']
             
         key = None if category == OVERALL_BUDGET_CATEGORY else category
         targets[key] = amount
@@ -484,7 +423,7 @@ def get_budget_months() -> List[str]:
     rows = cursor.fetchall()
     conn.close()
 
-    return [row[0] for row in rows]
+    return [row['month'] for row in rows]
 
 # ============= BANK PASSWORD OPERATIONS =============
 
@@ -494,10 +433,6 @@ def add_bank_password(bank_name: str, password: str) -> bool:
     cursor = conn.cursor()
     
     ph = get_placeholder()
-    # Postgres doesn't support ?=value in UPDATE. It needs excluded.value logic which we have.
-    # But wait, the original code had: ON CONFLICT... DO UPDATE SET password = ?
-    # That syntax is tricky with placeholders passed twice.
-    # Better to use `excluded.password` which works in both SQLite and Postgres.
     
     cursor.execute(f"""
         INSERT INTO bank_passwords (bank_name, password)
@@ -518,7 +453,7 @@ def get_bank_passwords() -> List[Dict]:
     rows = cursor.fetchall()
     conn.close()
     
-    return [dict(row) if not isinstance(row, tuple) else {'bank_name': row[0], 'password': row[1]} for row in rows]
+    return [dict(row) for row in rows]
 
 def get_bank_password(bank_name: str) -> Optional[str]:
     """Get password for a specific bank."""
@@ -531,7 +466,7 @@ def get_bank_password(bank_name: str) -> Optional[str]:
     conn.close()
     
     if row:
-        return row[0]
+        return row['password']
     return None
 
 def update_bank_password(bank_name: str, new_password: str) -> bool:
@@ -572,19 +507,13 @@ def add_finance_log(log_date: str, total_assets: float, total_debt: float) -> in
     cursor = conn.cursor()
 
     ph = get_placeholder()
-    if get_db_type() == "postgres":
-        cursor.execute(f"""
-            INSERT INTO finance_logs (log_date, total_assets, total_debt, net_worth)
-            VALUES ({ph}, {ph}, {ph}, {ph})
-            RETURNING id
-        """, (log_date, total_assets, total_debt, net_worth))
-        log_id = cursor.fetchone()[0]
-    else:
-        cursor.execute(f"""
-            INSERT INTO finance_logs (log_date, total_assets, total_debt, net_worth)
-            VALUES ({ph}, {ph}, {ph}, {ph})
-        """, (log_date, total_assets, total_debt, net_worth))
-        log_id = cursor.lastrowid
+    cursor.execute(f"""
+        INSERT INTO finance_logs (log_date, total_assets, total_debt, net_worth)
+        VALUES ({ph}, {ph}, {ph}, {ph})
+        RETURNING id
+    """, (log_date, total_assets, total_debt, net_worth))
+    
+    log_id = cursor.fetchone()['id']
 
     conn.commit()
     conn.close()
@@ -606,22 +535,21 @@ def add_finance_log_with_items(
     ph = get_placeholder()
     
     try:
-        if get_db_type() == "postgres":
-            cursor.execute(f"""
-                INSERT INTO finance_logs (log_date, total_assets, total_debt, net_worth)
-                VALUES ({ph}, {ph}, {ph}, {ph})
-                RETURNING id
-            """, (log_date, total_assets, total_debt, net_worth))
-            log_id = cursor.fetchone()[0]
-        else:
-            cursor.execute(f"""
-                INSERT INTO finance_logs (log_date, total_assets, total_debt, net_worth)
-                VALUES ({ph}, {ph}, {ph}, {ph})
-            """, (log_date, total_assets, total_debt, net_worth))
-            log_id = cursor.lastrowid
+        cursor.execute(f"""
+            INSERT INTO finance_logs (log_date, total_assets, total_debt, net_worth)
+            VALUES ({ph}, {ph}, {ph}, {ph})
+            RETURNING id
+        """, (log_date, total_assets, total_debt, net_worth))
+        log_id = cursor.fetchone()['id']
 
         if asset_items:
             # executemany with placeholders
+            # Wait, execute_values is efficient but requires import.
+            # Let's stick to executemany for now to avoid new imports, it works fine with Psycopg2
+            # BUT Psycopg2 executemany is slow.
+            # However, for small lists it is fine.
+            # Reverting to simple loop or executemany.
+            
             cursor.executemany(
                 f"""
                 INSERT INTO finance_log_items (log_id, item_type, name, amount)
@@ -663,15 +591,6 @@ def get_finance_logs() -> List[Dict]:
     conn.close()
 
     # Uniform return type
-    if get_db_type() == "postgres":
-        return [
-            {
-                'id': row[0], 'log_date': row[1], 'total_assets': row[2], 
-                'total_debt': row[3], 'net_worth': row[4], 'created_at': row[5]
-            } 
-            for row in rows
-        ]
-    
     return [dict(row) for row in rows]
 
 def get_finance_log_items(log_ids: List[int]) -> List[Dict]:
@@ -683,8 +602,17 @@ def get_finance_log_items(log_ids: List[int]) -> List[Dict]:
     cursor = conn.cursor()
 
     ph = get_placeholder()
-    placeholders = ','.join(ph * len(log_ids)) # Wait, ph * len is correct string repetition? No, list comp joining
-    # Correct: ','.join([ph] * len(log_ids))
+    # Postgres requires slightly different syntax for IN clause with tuple?
+    # No, standard SQL IN (val1, val2) works.
+    # Psycopg2 adapts tuple to (val1, val2) automatically with %s.
+    
+    # But wait, `params` argument in `execute` expects a tuple/list.
+    # If we have one placeholder %s and pass a tuple, Psycopg2 adapts it.
+    # Let's verify: cursor.execute("SELECT ... IN %s", (tuple(ids),))
+    
+    # Original code manually constructed placeholders: IN ({placeholders})
+    # This is safe and works for both. Let's keep it.
+    
     placeholders = ','.join([ph] * len(log_ids))
     
     query = f"""
@@ -694,18 +622,11 @@ def get_finance_log_items(log_ids: List[int]) -> List[Dict]:
         ORDER BY log_id ASC, item_type ASC, name ASC
     """
     
-    # Need to convert ids to tuple for postgres execution if list
     cursor.execute(query, tuple(log_ids))
 
     rows = cursor.fetchall()
     conn.close()
     
-    if get_db_type() == "postgres":
-        return [
-            {'id': row[0], 'log_id': row[1], 'item_type': row[2], 'name': row[3], 'amount': row[4]}
-            for row in rows
-        ]
-
     return [dict(row) for row in rows]
 
 def delete_finance_log(log_id: int) -> bool:
@@ -761,9 +682,6 @@ def get_finance_current_items(item_type: str) -> List[Dict]:
 
     rows = cursor.fetchall()
     conn.close()
-
-    if get_db_type() == "postgres":
-        return [{'name': row[0], 'amount': row[1]} for row in rows]
 
     return [dict(row) for row in rows]
 
@@ -821,18 +739,7 @@ def get_merchant_mappings() -> List[Dict]:
     rows = cursor.fetchall()
     conn.close()
     
-    if get_db_type() == "postgres":
-        return [
-            {
-                'id': row[0], 'merchant_pattern': row[1], 'category': row[2], 
-                'created_at': row[3], 'last_used': row[4]
-            } 
-            for row in rows
-        ]
-    
-    return [dict(row) for row in results] # wait, 'results' is undefined in original replace block context? 
-    # Original used: results = [dict(row) for row in cursor.fetchall()]
-    # I should return [dict(row) for row in rows] here.
+    return [dict(row) for row in rows]
 
 def get_merchant_mapping_for_description(description: str) -> Optional[str]:
     """Find a matching merchant mapping for a description. Returns category or None."""
@@ -841,14 +748,13 @@ def get_merchant_mapping_for_description(description: str) -> Optional[str]:
     
     # Get all patterns
     cursor.execute("SELECT merchant_pattern, category FROM merchant_mappings")
-    mappings = cursor.fetchall() # Tuple in postgres, Row in sqlite
+    mappings = [dict(row) for row in cursor.fetchall()]
     conn.close()
     
     desc_upper = description.upper()
     
     # Helper to unpack
     def unpack(row):
-        if isinstance(row, tuple): return row[0], row[1]
         return row['merchant_pattern'], row['category']
     
     # Try exact match first
@@ -912,13 +818,8 @@ def find_similar_transactions(description: str, exclude_id: Optional[int] = None
     cursor.execute("SELECT id, description, category, date, amount FROM transactions")
     rows = cursor.fetchall()
     
-    if get_db_type() == "postgres":
-        all_transactions = [
-            {'id': row[0], 'description': row[1], 'category': row[2], 'date': row[3], 'amount': row[4]}
-            for row in rows
-        ]
-    else:
-        all_transactions = [dict(row) for row in rows]
+    # Uniform conversion to dict
+    all_transactions = [dict(row) for row in rows]
         
     conn.close()
     
@@ -956,16 +857,13 @@ def bulk_update_category(description_pattern: str, new_category: str,
     
     # Get all transactions
     cursor.execute("SELECT id, description FROM transactions")
-    all_transactions = cursor.fetchall()
+    all_transactions = [dict(row) for row in cursor.fetchall()]
     
     updated_count = 0
     ph = get_placeholder()
     
     for row in all_transactions:
-        if get_db_type() == "postgres":
-            trans_id, trans_desc = row[0], row[1]
-        else:
-            trans_id, trans_desc = row['id'], row['description']
+        trans_id, trans_desc = row['id'], row['description']
             
         score = fuzz.token_set_ratio(description_pattern.upper(), trans_desc.upper()) / 100.0
         
@@ -1007,7 +905,8 @@ def get_merchant_mapping_stats() -> Dict[str, any]:
     
     # Total mappings
     cursor.execute("SELECT COUNT(*) as count FROM merchant_mappings")
-    total_mappings = cursor.fetchone()['count']
+    row = cursor.fetchone()
+    total_mappings = row['count']
     
     # Most recent mappings
     cursor.execute("""
@@ -1025,7 +924,9 @@ def get_merchant_mapping_stats() -> Dict[str, any]:
         GROUP BY category
         ORDER BY count DESC
     """)
-    by_category = {row['category']: row['count'] for row in cursor.fetchall()}
+    rows = cursor.fetchall()
+    
+    by_category = {dict(row)['category']: dict(row)['count'] for row in rows}
     
     conn.close()
     
