@@ -36,7 +36,8 @@ def get_connection():
                 port=secrets["port"],
                 dbname=secrets["dbname"],
                 user=secrets["user"],
-                password=secrets["password"]
+                password=secrets["password"],
+                cursor_factory=RealDictCursor
             )
             return conn
         except Exception as e:
