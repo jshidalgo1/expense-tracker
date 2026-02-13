@@ -10,7 +10,7 @@ from utils.database import (
     get_budget_targets,
     get_finance_logs
 )
-from utils.merchant_learner import get_learning_stats
+
 
 # Page configuration
 st.set_page_config(
@@ -107,7 +107,7 @@ overall_budget = float(budget_targets.get(None, 0.0))
 # At-a-glance visuals
 st.subheader("✨ At a Glance")
 
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3 = st.columns(3)
 
 with col1:
     st.caption("This Month vs Budget")
@@ -182,17 +182,6 @@ with col3:
         yaxis=dict(range=[0, 100], ticksuffix='%')
     )
     st.plotly_chart(fig_account, width="stretch")
-
-with col4:
-    st.caption("Auto-Categorization")
-    learning_stats = get_learning_stats()
-    coverage_pct = learning_stats.get('coverage_percentage', 0.0)
-    st.metric("Coverage", f"{coverage_pct:.0f}%")
-    st.progress(min(coverage_pct / 100, 1.0))
-    st.caption(
-        f"{learning_stats.get('transactions_covered_by_mapping', 0):,} of "
-        f"{learning_stats.get('total_transactions', 0):,} txns"
-    )
 
 st.divider()
 

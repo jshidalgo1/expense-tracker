@@ -509,6 +509,7 @@ def add_finance_log(log_date: str, total_assets: float, total_debt: float) -> in
             log_id = cursor.fetchone()['id']
 
             conn.commit()
+            st.cache_data.clear()
             return log_id
 
 def add_finance_log_with_items(
@@ -556,24 +557,28 @@ def add_finance_log_with_items(
                     )
 
                 conn.commit()
+                st.cache_data.clear()
                 return log_id
             except Exception as e:
                 conn.rollback()
                 print(f"Error adding finance log: {e}")
                 raise e
 
+@st.cache_data(show_spinner=False)
 def get_finance_logs() -> List[Dict]:
     """Get all finance logs ordered by date ascending."""
-    with get_db_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT id, log_date, total_assets, total_debt, net_worth, created_at
-                FROM finance_logs
-                ORDER BY log_date ASC, id ASC
-            """)
+    from utils.profiler import scope_timer
+    with scope_timer('Fetch Finance Logs'):
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id, log_date, total_assets, total_debt, net_worth, created_at
+                    FROM finance_logs
+                    ORDER BY log_date ASC, id ASC
+                """)
 
-            rows = cursor.fetchall()
-            return [dict(row) for row in rows]
+                rows = cursor.fetchall()
+                return [dict(row) for row in rows]
 
 def get_finance_log_items(log_ids: List[int]) -> List[Dict]:
     """Get all finance log items for the given log IDs."""
@@ -619,6 +624,9 @@ def delete_finance_log(log_id: int) -> bool:
 
             deleted = cursor.rowcount > 0
             conn.commit()
+            
+            if deleted:
+                st.cache_data.clear()
 
             return deleted
 
