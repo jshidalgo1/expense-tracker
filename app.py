@@ -65,6 +65,22 @@ if authentication_status:
         - **Finance Log**: Track overall net worth
         - **Goals**: Monthly budgets and limits
         """)
+
+        st.divider()
+        
+        from utils.profiler import get_profiler_stats
+        with st.expander("⏱️ Performance Stats"):
+            stats = get_profiler_stats()
+            if stats:
+                for key, value in stats.items():
+                    st.write(f"**{key}:** {value:.4f}s")
+            else:
+                st.write("No profiling data available yet.")
+            
+            if st.button("Clear Cache & Rerun"):
+                st.cache_resource.clear()
+                st.cache_data.clear()
+                st.rerun()
     
     # Main page content
     st.title("Welcome to Your Expense Tracker! 💰")

@@ -11,21 +11,24 @@ from contextlib import contextmanager
 @st.cache_resource
 def init_connection_pool():
     """Initialize the connection pool."""
-    try:
-        secrets = st.secrets["postgres"]
-        return psycopg2.pool.ThreadedConnectionPool(
-            minconn=1,
-            maxconn=10,
-            host=secrets["host"],
-            port=secrets["port"],
-            dbname=secrets["dbname"],
-            user=secrets["user"],
-            password=secrets["password"],
-            cursor_factory=RealDictCursor
-        )
-    except Exception as e:
-        st.error(f"Failed to connect to PostgreSQL: {e}")
-        st.stop()
+    from utils.profiler import scope_timer
+    
+    with scope_timer('DB Connection Init'):
+        try:
+            secrets = st.secrets["postgres"]
+            return psycopg2.pool.ThreadedConnectionPool(
+                minconn=1,
+                maxconn=10,
+                host=secrets["host"],
+                port=secrets["port"],
+                dbname=secrets["dbname"],
+                user=secrets["user"],
+                password=secrets["password"],
+                cursor_factory=RealDictCursor
+            )
+        except Exception as e:
+            st.error(f"Failed to connect to PostgreSQL: {e}")
+            st.stop()
 
 @contextmanager
 def get_db_connection():
@@ -204,36 +207,39 @@ def get_transactions(date_from: Optional[str] = None,
                      categories: Optional[List[str]] = None,
                      accounts: Optional[List[str]] = None) -> List[Dict]:
     """Get transactions with optional filters."""
-    with get_db_connection() as conn:
-        with conn.cursor() as cursor:
-            ph = get_placeholder()
-            query = "SELECT * FROM transactions WHERE 1=1"
-            params = []
-            
-            if date_from:
-                query += f" AND date >= {ph}"
-                params.append(date_from)
-            
-            if date_to:
-                query += f" AND date <= {ph}"
-                params.append(date_to)
-            
-            if categories:
-                placeholders = ','.join([ph] * len(categories))
-                query += f" AND category IN ({placeholders})"
-                params.extend(categories)
-            
-            if accounts:
-                placeholders = ','.join([ph] * len(accounts))
-                query += f" AND account IN ({placeholders})"
-                params.extend(accounts)
-            
-            query += " ORDER BY date DESC"
-            
-            cursor.execute(query, tuple(params))
-            
-            rows = cursor.fetchall()
-            return [dict(row) for row in rows]
+    from utils.profiler import scope_timer
+    
+    with scope_timer('Fetch Transactions'):
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                ph = get_placeholder()
+                query = "SELECT * FROM transactions WHERE 1=1"
+                params = []
+                
+                if date_from:
+                    query += f" AND date >= {ph}"
+                    params.append(date_from)
+                
+                if date_to:
+                    query += f" AND date <= {ph}"
+                    params.append(date_to)
+                
+                if categories:
+                    placeholders = ','.join([ph] * len(categories))
+                    query += f" AND category IN ({placeholders})"
+                    params.extend(categories)
+                
+                if accounts:
+                    placeholders = ','.join([ph] * len(accounts))
+                    query += f" AND account IN ({placeholders})"
+                    params.extend(accounts)
+                
+                query += " ORDER BY date DESC"
+                
+                cursor.execute(query, tuple(params))
+                
+                rows = cursor.fetchall()
+                return [dict(row) for row in rows]
 
 def delete_transaction(transaction_id: int) -> bool:
     """Delete a transaction by ID."""
