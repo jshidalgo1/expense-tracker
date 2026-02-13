@@ -202,6 +202,7 @@ def add_transaction(date: str, description: str, category: str,
             conn.commit()
             return transaction_id
 
+@st.cache_data(ttl=60, show_spinner=False)
 def get_transactions(date_from: Optional[str] = None, 
                      date_to: Optional[str] = None,
                      categories: Optional[List[str]] = None,
@@ -240,6 +241,23 @@ def get_transactions(date_from: Optional[str] = None,
                 
                 rows = cursor.fetchall()
                 return [dict(row) for row in rows]
+
+def get_dashboard_stats() -> Dict:
+    """Get summary statistics directly from SQL for the dashboard header."""
+    from utils.profiler import scope_timer
+    
+    with scope_timer('Fetch Dashboard Stats'):
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT 
+                        COUNT(*) as count, 
+                        COALESCE(SUM(amount), 0) as total_amount, 
+                        COUNT(DISTINCT category) as categories 
+                    FROM transactions
+                """)
+                row = cursor.fetchone()
+                return dict(row)
 
 def delete_transaction(transaction_id: int) -> bool:
     """Delete a transaction by ID."""

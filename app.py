@@ -119,29 +119,24 @@ if authentication_status:
     """)
     
     # Quick stats
-    from utils.database import get_transactions
-    import pandas as pd
+    from utils.database import get_dashboard_stats
     
     st.divider()
     
     st.subheader("📈 Quick Overview")
     
-    transactions = get_transactions()
+    stats = get_dashboard_stats()
     
-    if transactions:
-        df = pd.DataFrame(transactions)
-        
+    if stats['count'] > 0:
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.metric("Total Transactions", len(transactions))
+            st.metric("Total Transactions", stats['count'])
         
         with col2:
-            total_amount = df['amount'].sum()
-            st.metric("Total Expenses", f"₱{total_amount:,.2f}")
+            st.metric("Total Expenses", f"₱{stats['total_amount']:,.2f}")
         
         with col3:
-            categories = df['category'].nunique()
-            st.metric("Categories", categories)
+            st.metric("Categories", stats['categories'])
     else:
         st.info("No transactions yet. Start by adding an expense or uploading a statement!")
