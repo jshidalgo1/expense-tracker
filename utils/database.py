@@ -200,6 +200,7 @@ def add_transaction(date: str, description: str, category: str,
             transaction_id = cursor.fetchone()['id']
             
             conn.commit()
+            st.cache_data.clear()
             return transaction_id
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -242,6 +243,7 @@ def get_transactions(date_from: Optional[str] = None,
                 rows = cursor.fetchall()
                 return [dict(row) for row in rows]
 
+@st.cache_data(ttl=60, show_spinner=False)
 def get_dashboard_stats() -> Dict:
     """Get summary statistics directly from SQL for the dashboard header."""
     from utils.profiler import scope_timer
@@ -268,6 +270,10 @@ def delete_transaction(transaction_id: int) -> bool:
             
             deleted = cursor.rowcount > 0
             conn.commit()
+            
+            if deleted:
+                st.cache_data.clear()
+            
             return deleted
 
 def update_transaction(
@@ -294,6 +300,10 @@ def update_transaction(
 
             updated = cursor.rowcount > 0
             conn.commit()
+            
+            if updated:
+                st.cache_data.clear()
+            
             return updated
 
 def get_date_range() -> Tuple[Optional[str], Optional[str]]:
