@@ -1,6 +1,8 @@
+# ... (imports)
 import streamlit as st
 from utils.auth import get_authenticator
 from utils.database import init_db
+from utils.profiler import get_profiler_stats, scope_timer
 
 # Page configuration
 st.set_page_config(
@@ -10,8 +12,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Clear profiler stats at the start of the run to avoid stale data
+if 'profiler_stats' in st.session_state:
+    st.session_state['profiler_stats'] = {}
+
 # Initialize database
 init_db()
+
+# ... (authentication code remains the same until sidebar)
 
 # Authentication - Load config from Streamlit secrets
 authenticator = get_authenticator()
@@ -23,12 +31,11 @@ except Exception as e:
     st.error(e)
 
 # Check authentication status from session state
-if st.session_state.get('authentication_status') is None: # Changed condition to `is None` for initial state
+if st.session_state.get('authentication_status') is None:
     st.warning("Please enter your username and password")
     st.stop()
 
 # The new API stores authentication status in st.session_state
-# We need to retrieve these values from st.session_state
 name = st.session_state['name']
 authentication_status = st.session_state['authentication_status']
 username = st.session_state['username']
@@ -42,8 +49,6 @@ if authentication_status == None:
     st.stop()
 
 # User is authenticated
-
-# If authenticated, show main content
 if authentication_status:
     # Sidebar
     with st.sidebar:
@@ -68,19 +73,8 @@ if authentication_status:
 
         st.divider()
         
-        from utils.profiler import get_profiler_stats
-        with st.expander("⏱️ Performance Stats"):
-            stats = get_profiler_stats()
-            if stats:
-                for key, value in stats.items():
-                    st.write(f"**{key}:** {value:.4f}s")
-            else:
-                st.write("No profiling data available yet.")
-            
-            if st.button("Clear Cache & Rerun"):
-                st.cache_resource.clear()
-                st.cache_data.clear()
-                st.rerun()
+        # Placeholder for performance stats - will be filled at the end
+        stats_container = st.empty()
     
     # Main page content
     st.title("Welcome to Your Expense Tracker! 💰")
@@ -125,7 +119,9 @@ if authentication_status:
     
     st.subheader("📈 Quick Overview")
     
-    stats = get_dashboard_stats()
+    # Measure the actual call time (including cache hits)
+    with scope_timer("Fetch Dashboard Stats (Latency)"):
+        stats = get_dashboard_stats()
     
     if stats['count'] > 0:
         col1, col2, col3 = st.columns(3)
@@ -140,3 +136,18 @@ if authentication_status:
             st.metric("Categories", stats['categories'])
     else:
         st.info("No transactions yet. Start by adding an expense or uploading a statement!")
+
+    # Render performance stats at the end
+    with stats_container.container():
+        with st.expander("⏱️ Performance Stats"):
+            current_stats = get_profiler_stats()
+            if current_stats:
+                for key, value in current_stats.items():
+                    st.write(f"**{key}:** {value:.4f}s")
+            else:
+                st.write("No profiling data available.")
+            
+            if st.button("Clear Cache & Rerun"):
+                st.cache_resource.clear()
+                st.cache_data.clear()
+                st.rerun()
