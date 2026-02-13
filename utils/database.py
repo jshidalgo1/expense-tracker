@@ -193,7 +193,7 @@ def add_transaction(date: str, description: str, category: str,
                 INSERT INTO transactions (date, description, category, amount, account, source)
                 VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph})
                 RETURNING id
-            """, (date, description, category, amount, account, source))
+            """, (date, description, category, float(amount), account, source))
             transaction_id = cursor.fetchone()['id']
             
             conn.commit()
@@ -240,7 +240,7 @@ def delete_transaction(transaction_id: int) -> bool:
     with get_db_connection() as conn:
         with conn.cursor() as cursor:
             ph = get_placeholder()
-            cursor.execute(f"DELETE FROM transactions WHERE id = {ph}", (transaction_id,))
+            cursor.execute(f"DELETE FROM transactions WHERE id = {ph}", (int(transaction_id),))
             
             deleted = cursor.rowcount > 0
             conn.commit()
@@ -265,7 +265,7 @@ def update_transaction(
                 SET date = {ph}, description = {ph}, category = {ph}, amount = {ph}, account = {ph}, source = {ph}
                 WHERE id = {ph}
                 """,
-                (date, description, category, amount, account, source, transaction_id)
+                (date, description, category, float(amount), account, source, int(transaction_id))
             )
 
             updated = cursor.rowcount > 0
@@ -372,7 +372,7 @@ def upsert_budget_target(month: str, category: Optional[str], amount: float) -> 
             amount = excluded.amount,
             updated_at = CURRENT_TIMESTAMP
         """,
-        (month, category_value, amount)
+        (month, category_value, float(amount))
     )
 
 def delete_budget_target(month: str, category: Optional[str]) -> bool:
@@ -472,7 +472,7 @@ def delete_bank_password(bank_name: str) -> bool:
 
 def add_finance_log(log_date: str, total_assets: float, total_debt: float) -> int:
     """Add a finance log snapshot and return its ID."""
-    net_worth = total_assets - total_debt
+    net_worth = float(total_assets) - float(total_debt)
     with get_db_connection() as conn:
         with conn.cursor() as cursor:
             ph = get_placeholder()
@@ -480,7 +480,7 @@ def add_finance_log(log_date: str, total_assets: float, total_debt: float) -> in
                 INSERT INTO finance_logs (log_date, total_assets, total_debt, net_worth)
                 VALUES ({ph}, {ph}, {ph}, {ph})
                 RETURNING id
-            """, (log_date, total_assets, total_debt, net_worth))
+            """, (log_date, float(total_assets), float(total_debt), net_worth))
             
             log_id = cursor.fetchone()['id']
 
@@ -496,6 +496,9 @@ def add_finance_log_with_items(
 ) -> int:
     """Add a finance log and its breakdown items in a single transaction."""
     # Reusing add_finance_log logic but we need atomic transaction
+    # Ensure inputs are Python floats, not numpy types
+    total_assets = float(total_assets)
+    total_debt = float(total_debt)
     net_worth = total_assets - total_debt
     
     with get_db_connection() as conn:
@@ -516,7 +519,7 @@ def add_finance_log_with_items(
                         INSERT INTO finance_log_items (log_id, item_type, name, amount)
                         VALUES ({ph}, 'asset', {ph}, {ph})
                         """,
-                        [(log_id, name, amount) for name, amount in asset_items]
+                        [(log_id, name, float(amount)) for name, amount in asset_items]
                     )
 
                 if debt_items:
@@ -525,7 +528,7 @@ def add_finance_log_with_items(
                         INSERT INTO finance_log_items (log_id, item_type, name, amount)
                         VALUES ({ph}, 'debt', {ph}, {ph})
                         """,
-                        [(log_id, name, amount) for name, amount in debt_items]
+                        [(log_id, name, float(amount)) for name, amount in debt_items]
                     )
 
                 conn.commit()
