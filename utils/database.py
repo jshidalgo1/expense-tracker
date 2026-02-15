@@ -123,15 +123,7 @@ def init_db():
                 )
             """)
             
-            # Create bank_passwords table
-            cursor.execute(f"""
-                CREATE TABLE IF NOT EXISTS bank_passwords (
-                    id {pk_def},
-                    bank_name {text_type} UNIQUE NOT NULL,
-                    password {text_type} NOT NULL,
-                    updated_at {text_type} DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
+
 
             # Create finance_logs table
             cursor.execute(f"""
@@ -444,63 +436,7 @@ def get_budget_months() -> List[str]:
             rows = cursor.fetchall()
             return [row['month'] for row in rows]
 
-# ============= BANK PASSWORD OPERATIONS =============
 
-def add_bank_password(bank_name: str, password: str) -> bool:
-    """Add or update a bank password."""
-    with get_db_connection() as conn:
-        with conn.cursor() as cursor:
-            ph = get_placeholder()
-            cursor.execute(f"""
-                INSERT INTO bank_passwords (bank_name, password)
-                VALUES ({ph}, {ph})
-                ON CONFLICT(bank_name) DO UPDATE SET password = excluded.password
-            """, (bank_name, password))
-            conn.commit()
-            return True
-
-def get_bank_passwords() -> List[Dict]:
-    """Get all bank passwords."""
-    with get_db_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT bank_name, password FROM bank_passwords ORDER BY bank_name")
-            rows = cursor.fetchall()
-            return [dict(row) for row in rows]
-
-def get_bank_password(bank_name: str) -> Optional[str]:
-    """Get password for a specific bank."""
-    with get_db_connection() as conn:
-        with conn.cursor() as cursor:
-            ph = get_placeholder()
-            cursor.execute(f"SELECT password FROM bank_passwords WHERE bank_name = {ph}", (bank_name,))
-            row = cursor.fetchone()
-            
-            if row:
-                return row['password']
-            return None
-
-def update_bank_password(bank_name: str, new_password: str) -> bool:
-    """Update a bank password."""
-    with get_db_connection() as conn:
-        with conn.cursor() as cursor:
-            ph = get_placeholder()
-            cursor.execute(f"UPDATE bank_passwords SET password = {ph} WHERE bank_name = {ph}",
-                          (new_password, bank_name))
-            
-            updated = cursor.rowcount > 0
-            conn.commit()
-            return updated
-
-def delete_bank_password(bank_name: str) -> bool:
-    """Delete a bank password."""
-    with get_db_connection() as conn:
-        with conn.cursor() as cursor:
-            ph = get_placeholder()
-            cursor.execute(f"DELETE FROM bank_passwords WHERE bank_name = {ph}", (bank_name,))
-            
-            deleted = cursor.rowcount > 0
-            conn.commit()
-            return deleted
 
 # ============= FINANCE LOG OPERATIONS =============
 
