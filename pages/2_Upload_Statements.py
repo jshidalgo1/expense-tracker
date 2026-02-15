@@ -69,6 +69,7 @@ if st.button("🔄 Process Images", width="stretch", type="primary"):
         # Reset preview state for new submission
         st.session_state.preview_data = []
         st.session_state.editing_rows = {}
+        st.session_state.source_images = [] # Store images for preview
         
         # Step 1: Extract all transactions from all files
         st.info(f"📊 Extracting transactions for {bank_choice}...")
@@ -81,8 +82,15 @@ if st.button("🔄 Process Images", width="stretch", type="primary"):
                 # Save uploaded file temporarily
                 suffix = "." + uploaded_file.name.split(".")[-1]
                 with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-                    temp_file.write(uploaded_file.getbuffer())
+                    file_bytes = uploaded_file.getbuffer()
+                    temp_file.write(file_bytes)
                     temp_path = temp_file.name
+                    
+                    # Store bytes for preview
+                    st.session_state.source_images.append({
+                        "name": uploaded_file.name,
+                        "bytes": bytes(file_bytes)
+                    })
 
                 # Extract transactions using OCR
                 success, transactions, error = extract_transactions_from_image(temp_path, bank_name=bank_choice)
@@ -140,6 +148,14 @@ if st.button("🔄 Process Images", width="stretch", type="primary"):
 
 # Display preview if we have data in session state
 if 'preview_data' in st.session_state and st.session_state.preview_data:
+    # Source Images Preview
+    if 'source_images' in st.session_state and st.session_state.source_images:
+        with st.expander("📸 View Source Screenshots", expanded=False):
+            img_cols = st.columns(min(3, len(st.session_state.source_images))) if len(st.session_state.source_images) > 0 else [st]
+            for idx, img in enumerate(st.session_state.source_images):
+                with img_cols[idx % 3]:
+                    st.image(img['bytes'], caption=img['name'], use_container_width=True)
+
     # Step 2: Preview all transactions with edit/delete options
     st.divider()
     st.subheader("👀 Preview & Edit Transactions")
