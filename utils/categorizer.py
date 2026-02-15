@@ -105,10 +105,9 @@ def auto_categorize(description: str, confidence_threshold: float = 60.0) -> Opt
     suggested_category, confidence = suggest_category(description, existing_categories)
     
     if confidence >= confidence_threshold:
-        # Ensure category exists in database
-        if suggested_category not in existing_categories:
-            add_category(suggested_category)
-        return suggested_category
+        # user_request: strictly stick to existing categories
+        if suggested_category in existing_categories:
+            return suggested_category
     
     return None
 
