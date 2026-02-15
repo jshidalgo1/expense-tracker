@@ -360,7 +360,13 @@ def get_categories() -> List[str]:
         with conn.cursor() as cursor:
             cursor.execute("SELECT name FROM categories ORDER BY name")
             rows = cursor.fetchall()
-            return [row['name'] for row in rows]
+            categories = [row['name'] for row in rows]
+            
+            # Ensure "Uncategorized" exists in the list
+            if "Uncategorized" not in categories:
+                categories.insert(0, "Uncategorized")
+                
+            return categories
 
 def update_category(old_name: str, new_name: str) -> bool:
     """Update a category name."""
