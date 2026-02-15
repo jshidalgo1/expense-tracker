@@ -95,16 +95,16 @@ with tab_upload:
 
     # File uploader
     uploaded_files = st.file_uploader(
-        "Upload PDF Statements",
-        type=["pdf"],
+        "Upload Statement Images (Screenshots)",
+        type=["png", "jpg", "jpeg"],
         accept_multiple_files=True,
-        help="You can upload multiple PDF files at once"
+        help="Upload screenshots of your bank statement transactions"
     )
         
     col_submit, col_save = st.columns([1, 1])
     
     with col_submit:
-        submitted = st.button("🔄 Process Statements", width="stretch", type="primary")
+        submitted = st.button("🔄 Process Images", width="stretch", type="primary")
         
     with col_save:
         saved_config = st.button("💾 Save Bank Config Only", width="stretch")
@@ -128,7 +128,7 @@ with tab_upload:
         if bank_choice == "+ Add New Bank" and not new_bank_name:
             st.error("Please enter a bank name")
         elif not uploaded_files:
-            st.error("Please upload at least one PDF file")
+            st.error("Please upload at least one image file")
         else:
             # Determine final bank name (re-evaluate for process scope)
             final_bank_name = new_bank_name if bank_choice == "+ Add New Bank" else bank_choice
@@ -138,23 +138,24 @@ with tab_upload:
             st.session_state.editing_rows = {}
             
             # Step 1: Extract all transactions from all files
-            st.info("📊 Extracting transactions from files...")
+            st.info("📊 Extracting transactions from images...")
             all_extracted_transactions = []
             extraction_errors = []
+            
+            from utils.ocr_parser import extract_transactions_from_image
             
             for uploaded_file in uploaded_files:
                 temp_path = None
                 try:
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+                    # Save uploaded file temporarily
+                    suffix = "." + uploaded_file.name.split(".")[-1]
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
                         temp_file.write(uploaded_file.getbuffer())
                         temp_path = temp_file.name
 
-                    # Extract transactions
-                    success, transactions, error = extract_transactions(
-                        temp_path,
-                        password=password if password else None,
-                        bank_type="auto"
-                    )
+                    # Extract transactions using OCR
+                    success, transactions, error = extract_transactions_from_image(temp_path, bank_name=final_bank_name)
+                    
                 except Exception as exc:
                     success = False
                     transactions = []
