@@ -35,13 +35,35 @@ def get_db_connection():
     """
     Context manager to get a connection from the pool.
     Automatically returns the connection to the pool when done.
+    Checks for connection health and retries if stale.
     """
     db_pool = init_connection_pool()
     conn = db_pool.getconn()
     try:
+        # Health check: verify connection is alive
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        except psycopg2.OperationalError:
+            # Connection is dead; close it and get a fresh one
+            db_pool.putconn(conn, close=True)
+            conn = db_pool.getconn()
+        
         yield conn
-    finally:
+        
+        # Return to pool if successful
         db_pool.putconn(conn)
+        
+    except Exception as e:
+        # specific handling for errors during usage
+        if conn:
+            try:
+                # If the error was operational (e.g. lost connection during query), close it
+                is_operational = isinstance(e, psycopg2.OperationalError)
+                db_pool.putconn(conn, close=is_operational)
+            except Exception:
+                pass
+        raise e
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA_DIR = os.path.join(BASE_DIR, "data")
